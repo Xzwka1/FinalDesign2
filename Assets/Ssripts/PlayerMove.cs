@@ -2,7 +2,7 @@
 using System.Collections;
 
 [RequireComponent(typeof(CharacterController))] // บังคับให้ต้องมี CharacterController
-public class SimplePlayerMovement: MonoBehaviour
+public class SimplePlayerMovement : MonoBehaviour
 {
     [Header("Movement")]
     public float moveSpeed = 6f;
@@ -83,7 +83,7 @@ public class SimplePlayerMovement: MonoBehaviour
     void Start()
     {
         controller = GetComponent<CharacterController>();
-        if (controller == null) { /* ... (โค้ดเดิม) ... */ }
+        if (controller == null) { Debug.LogError("CharacterController component not found!"); enabled = false; return; }
 
         standingHeight = controller.height;
 
@@ -110,7 +110,7 @@ public class SimplePlayerMovement: MonoBehaviour
             standingCameraPos = playerCamera.localPosition;
             crouchCameraPos = new Vector3(standingCameraPos.x, standingCameraPos.y - (standingHeight - crouchHeight), standingCameraPos.z);
         }
-        else { /* ... (โค้ด Error เดิม) ... */ }
+        else { Debug.LogError("Player Camera Transform is not assigned!"); enabled = false; return; }
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -118,8 +118,13 @@ public class SimplePlayerMovement: MonoBehaviour
         wallRunTimer = maxWallRunTime;
     }
 
+
     void Update()
     {
+        if (PauseMenu.GameIsPaused)
+        {
+            return; // ถ้าเกมหยุด ให้หยุดทำงาน Update นี้ทันที
+        }
         // --- จัดการ Cooldown ---
         if (dashCooldownTimer > 0) dashCooldownTimer -= Time.deltaTime;
 
@@ -127,7 +132,10 @@ public class SimplePlayerMovement: MonoBehaviour
         MyInput(); // รับค่าปุ่มกด
         CheckForWall(); // เช็คกำแพง (สำหรับ Wall Jump / Wall Run)
         HandleWallRunState(); // เช็คสถานะ Wall Run
-
+        if (PauseMenu.GameIsPaused)
+    {
+        return; // ถ้าเกมหยุด ให้หยุดทำงาน Update นี้ทันที
+    }
         // --- เรียกฟังก์ชันหลัก ---
         HandleMovement(); // จัดการการเคลื่อนที่
         HandleMouseLook(); // จัดการมุมกล้อง
@@ -223,7 +231,6 @@ public class SimplePlayerMovement: MonoBehaviour
         if (isGrounded && velocity.y < 0) velocity.y = -2f; // รีเซ็ตแรงโน้มถ่วงเมื่อแตะพื้น
 
         // --- Logic การเปลี่ยนสถานะ Slide/Crouch ---
-        // (ส่วนนี้เหมือนเดิม)
         if (wantsToCrouch && isSprinting && !isSliding && !isCrouching) StartSlide(moveInputDirection);
         else if (!wantsToCrouch && isSliding) StopSlide();
 
@@ -236,7 +243,6 @@ public class SimplePlayerMovement: MonoBehaviour
 
         if (isWallRunning) // 1. ไต่กำแพง
         {
-            // ... (โค้ด Wall Running เหมือนเดิม) ...
             Vector3 wallNormal = wallRight ? rightWallHit.normal : leftWallHit.normal;
             Vector3 wallForward = Vector3.Cross(wallNormal, Vector3.up);
             if (Vector3.Dot(transform.forward, wallForward) < 0) wallForward = -wallForward;
@@ -245,15 +251,12 @@ public class SimplePlayerMovement: MonoBehaviour
         }
         else if (isSliding) // 2. สไลด์
         {
-            // ... (โค้ด Slide เหมือนเดิม) ...
             currentSlideSpeed -= slideFriction * Time.deltaTime;
             if (currentSlideSpeed <= crouchSpeed) { StopSlide(); targetHorizontalVelocity = slideDirection * crouchSpeed; }
             else { targetHorizontalVelocity = slideDirection * currentSlideSpeed; }
         }
         else // 3. เคลื่อนที่ปกติ
         {
-            // --- ⬇️ นี่คือส่วนที่แก้ไข ⬇️ ---
-
             // 1. เช็คว่า "อยาก" วิ่งไหม (กด Shift + W + ไม่ย่อ)
             bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && zInput > 0.1f && !isCrouching;
 
@@ -274,15 +277,12 @@ public class SimplePlayerMovement: MonoBehaviour
 
             // 3. ใช้ความเร็วที่ถูกต้อง
             targetHorizontalVelocity = moveInputDirection * currentSpeed;
-
-            // --- ⬆️ จบส่วนที่แก้ไข ⬆️ ---
         }
 
 
-        // --- Slope Check (เหมือนเดิม) ---
+        // --- Slope Check ---
         if (!isWallRunning)
         {
-            // ... (โค้ด Slope Check ทั้งหมดเหมือนเดิม) ...
             RaycastHit slopeHit;
             Vector3 rayOrigin = transform.position + Vector3.up * (controller.radius * 0.5f);
             if (Physics.Raycast(rayOrigin, Vector3.down, out slopeHit, controller.height * 0.5f + 0.3f))
@@ -300,10 +300,9 @@ public class SimplePlayerMovement: MonoBehaviour
         }
 
 
-        // --- การกระโดด (เหมือนเดิม) ---
+        // --- การกระโดด ---
         if (Input.GetButtonDown("Jump"))
         {
-            // ... (โค้ด Jump ทั้งหมดเหมือนเดิม) ...
             if (isWallRunning) { WallJump(); isWallRunning = false; wallRunTimer = 0f; }
             else if (isGrounded)
             {
@@ -313,7 +312,7 @@ public class SimplePlayerMovement: MonoBehaviour
             else if (wallLeft || wallRight) { WallJump(); }
         }
 
-        // --- ใช้แรงโน้มถ่วง (เหมือนเดิม) ---
+        // --- ใช้แรงโน้มถ่วง ---
         if (!isWallRunning)
         {
             if (!isGrounded || velocity.y > -slopeForce + 0.1f)
@@ -322,7 +321,7 @@ public class SimplePlayerMovement: MonoBehaviour
             }
         }
 
-        // --- รวมความเร็วสุดท้าย และ Move (เหมือนเดิม) ---
+        // --- รวมความเร็วสุดท้าย และ Move ---
         Vector3 finalVelocity = targetHorizontalVelocity;
         finalVelocity.y = velocity.y;
         controller.Move(finalVelocity * Time.deltaTime);
@@ -433,4 +432,56 @@ public class SimplePlayerMovement: MonoBehaviour
 
         isDashing = false;
     }
+
+    // -----------------------------------------------------------------
+    // --- ⬇️ (!!!) เมธอด Respawn ที่เพิ่มเข้ามา (!!!) ⬇️ ---
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// ย้าย CharacterController ไปยังจุดที่กำหนด (สำหรับ Respawn)
+    /// </summary>
+    /// <param name="spawnPoint">ตำแหน่งที่จะให้ไปเกิด</param>
+    /// <param name="controller">ตัว CharacterController ที่จะย้าย (ต้องเป็นตัวเดียวกับที่ใช้ใน Start)</param>
+    public void Respawn(Vector3 spawnPoint, CharacterController charController)
+    {
+        Debug.Log("PlayerMove is respawning...");
+
+        // 1. ปิด Controller ก่อนย้ายตำแหน่ง (ป้องกันบั๊ก)
+        if (charController != null)
+        {
+            charController.enabled = false;
+        }
+
+        // 2. ย้ายตำแหน่ง Player
+        transform.position = spawnPoint;
+
+        // 3. เปิด Controller กลับมา
+        if (charController != null)
+        {
+            charController.enabled = true;
+        }
+
+        // 4. รีเซ็ตสถานะทั้งหมด
+        velocity = Vector3.zero; // ล้างแรงโน้มถ่วง/แรงกระโดด
+        isDashing = false;
+        isSliding = false;
+        isCrouching = false;
+        isWallRunning = false;
+        wallRunTimer = maxWallRunTime;
+        dashCooldownTimer = 0f;
+
+        // 5. (ทางเลือก) รีเซ็ตมุมกล้อง
+        if (playerCamera != null)
+        {
+            xRotation = 0f;
+            playerCamera.localRotation = Quaternion.Euler(0f, 0f, 0f);
+            playerCamera.localPosition = standingCameraPos;
+        }
+        if (cameraComponent != null)
+        {
+            cameraComponent.fieldOfView = normalFOV;
+        }
+    }
+
+
 }
