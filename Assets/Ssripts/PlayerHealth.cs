@@ -3,103 +3,66 @@ using UnityEngine.UI;
 
 public class PlayerHealth : MonoBehaviour
 {
-    [Header("Health Settings")]
-    [SerializeField] private int maxHealth = 100;
+    [Header("Health Setting")]
+    public int maxHealth = 100;
     private int currentHealth;
 
-    [Header("Respawn")]
-    [SerializeField] private float respawnDelay = 2f; // หน่วงเวลาก่อนเกิด
-    private Vector3 respawnPoint; // จุดเกิด
-
     [Header("UI")]
-    [SerializeField] private Slider healthSlider;
+    public Slider healthSlider;
 
-    [Header("References")]
-    private SimplePlayerMovement playerMove; // ❗️ อ้างอิงสคริปต์ Movement ใหม่
-    private CharacterController controller;
-
-    private bool isDead = false;
+    // --- ⬇️ (แก้ไข) เปลี่ยนชื่อคลาสที่อ้างอิง ⬇️ ---
+    private SimplePlayerMovement playerMove;
+    private CharacterController controller; // ❗️ (เพิ่ม) เราต้องใช้ Controller ด้วย
+    private Vector3 respawnPoint; // ❗️ (เพิ่ม) เก็บจุดเกิด
 
     void Start()
     {
         currentHealth = maxHealth;
-        isDead = false;
-
-        // ❗️ อ้างอิงสคริปต์ Movement ใหม่
-        playerMove = GetComponent<SimplePlayerMovement>();
-        controller = GetComponent<CharacterController>();
-
-        respawnPoint = transform.position;
         UpdateHealthUI();
+
+        // --- ⬇️ (แก้ไข) GetComponent ให้ครบ ⬇️ ---
+        playerMove = GetComponent<SimplePlayerMovement>();
+        controller = GetComponent<CharacterController>(); // ❗️ (เพิ่ม)
+        respawnPoint = transform.position; // ❗️ (เพิ่ม) บันทึกจุดเกิด
+
+        if (playerMove == null) Debug.LogError("SimplePlayerMovement script not found!");
+        if (controller == null) Debug.LogError("CharacterController component not found!");
     }
 
-    public void TakeDamage(int damageAmount)
+    public void TakeDamage(int damage)
     {
-        if (isDead) return;
+        if (currentHealth <= 0) return; // ถ้าตายแล้ว ไม่ต้องรับดาเมจซ้ำ
 
-        currentHealth -= damageAmount;
+        currentHealth -= damage;
         if (currentHealth < 0) currentHealth = 0;
 
-        // --- ⬇️ นี่คือ Log ที่คุณต้องการ (เพิ่มบรรทัดนี้) ⬇️ ---
-        Debug.Log($"Player took {damageAmount} damage. Current health: {currentHealth}");
-        // --- ⬆️ จบส่วนที่เพิ่ม ⬆️ ---
+        // --- ⬇️ (เพิ่ม) Log ที่คุณต้องการ ⬇️ ---
+        Debug.Log($"Player took {damage} damage. Current health: {currentHealth}");
 
         UpdateHealthUI();
-
-        if (currentHealth <= 0)
-        {
-            Die();
-        }
+        if (currentHealth <= 0) Die();
     }
 
-    // ... (ฟังก์ชัน Heal, UpdateHealthUI เหมือนเดิม) ...
-    public void Heal(int healAmount) { /* ... (โค้ดเดิม) ... */ }
-    private void UpdateHealthUI() { /* ... (โค้ดเดิม) ... */ }
+    void UpdateHealthUI()
+    {
+        if (healthSlider != null)
+        {
+            healthSlider.maxValue = maxHealth;
+            healthSlider.value = currentHealth;
+        }
+    }
 
     private void Die()
     {
-        isDead = true;
-        Debug.Log("Player has died.");
+        Debug.Log("Player has died!");
 
-        if (playerMove != null)
-        {
-            playerMove.enabled = false; // ปิดสคริปต์ Movement
-        }
-
-        Invoke(nameof(StartRespawn), respawnDelay);
-    }
-
-    private void StartRespawn()
-    {
-        currentHealth = maxHealth;
-        UpdateHealthUI();
-        isDead = false;
-
-        if (playerMove != null)
-        {
-            playerMove.enabled = true; // เปิดสคริปต์ Movement
-        }
-
-        // เรียกฟังก์ชัน Respawn ที่เรา "กำลังจะสร้าง" ใน SimplePlayerMovement
         if (playerMove != null && controller != null)
         {
-            // ❗️ เราจะสร้างฟังก์ชัน Respawn นี้ในขั้นตอนต่อไป
+            // --- ⬇️ (แก้ไข) เรียก Respawn ให้ถูกรูปแบบ ⬇️ ---
             playerMove.Respawn(respawnPoint, controller);
         }
-        else
-        {
-            Debug.LogError("PlayerMove or Controller reference is missing! Cannot respawn.");
-        }
 
-        Debug.Log("Player has respawned.");
-    }
-
-    // ... (ฟังก์ชัน Update ทดสอบปุ่ม T เหมือนเดิม) ...
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            TakeDamage(20);
-        }
+        currentHealth = maxHealth;
+        UpdateHealthUI();
     }
 }

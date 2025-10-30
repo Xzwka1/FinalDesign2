@@ -87,28 +87,29 @@ public class SimplePlayerMovement : MonoBehaviour
 
         standingHeight = controller.height;
 
+        // --- ❗️ (เพิ่ม) ตั้งค่า Center Y เริ่มต้น ป้องกันจมดิน ---
+        controller.center = new Vector3(0, standingHeight / 2, 0);
+
         if (playerCamera != null)
         {
-            // --- ⬇️ นี่คือส่วนที่แก้ไข/เพิ่มเข้ามา ⬇️ ---
-
-            // 1. ค้นหา Component "Camera" ที่ติดอยู่กับ "playerCamera"
             cameraComponent = playerCamera.GetComponent<Camera>();
             if (cameraComponent != null)
             {
-                // 2. ถ้าเจอ ให้เก็บค่า FOV ปัจจุบันไว้เป็น "FOV ปกติ"
                 normalFOV = cameraComponent.fieldOfView;
             }
             else
             {
-                // 3. ถ้าไม่เจอ Component Camera ให้แจ้งเตือน (สำคัญมาก)
                 Debug.LogError("Player Camera Transform does not have a Camera component!");
                 enabled = false;
                 return;
             }
-            // --- ⬆️ จบส่วนที่เพิ่ม ⬆️ ---
 
             standingCameraPos = playerCamera.localPosition;
-            crouchCameraPos = new Vector3(standingCameraPos.x, standingCameraPos.y - (standingHeight - crouchHeight), standingCameraPos.z);
+
+            // --- ❗️ (แก้ไข) คำนวณตำแหน่งกล้องตอนย่อใหม่ (แก้บั๊กกล้องจม) ---
+            float cameraOffsetY = standingCameraPos.y - (standingHeight / 2); // ระยะห่างกล้องจาก Center
+            float newCenterY = crouchHeight / 2; // Center ใหม่ตอนย่อ
+            crouchCameraPos = new Vector3(standingCameraPos.x, newCenterY + cameraOffsetY, standingCameraPos.z);
         }
         else { Debug.LogError("Player Camera Transform is not assigned!"); enabled = false; return; }
 
@@ -121,61 +122,40 @@ public class SimplePlayerMovement : MonoBehaviour
 
     void Update()
     {
+        // --- ❗️ (แก้ไข) เช็ค Pause ทีเดียวบนสุด ---
         if (PauseMenu.GameIsPaused)
         {
             return; // ถ้าเกมหยุด ให้หยุดทำงาน Update นี้ทันที
         }
-        // --- จัดการ Cooldown ---
+
         if (dashCooldownTimer > 0) dashCooldownTimer -= Time.deltaTime;
 
-        // --- รับ Input ---
-        MyInput(); // รับค่าปุ่มกด
-        CheckForWall(); // เช็คกำแพง (สำหรับ Wall Jump / Wall Run)
-        HandleWallRunState(); // เช็คสถานะ Wall Run
-        if (PauseMenu.GameIsPaused)
-    {
-        return; // ถ้าเกมหยุด ให้หยุดทำงาน Update นี้ทันที
-    }
-        // --- เรียกฟังก์ชันหลัก ---
-        HandleMovement(); // จัดการการเคลื่อนที่
-        HandleMouseLook(); // จัดการมุมกล้อง
-        HandleHeightChange(); // จัดการย่อตัว/ยืน
+        MyInput();
+        CheckForWall();
+        HandleWallRunState();
+
+        HandleMovement();
+        HandleMouseLook();
+        HandleHeightChange();
         HandleCameraEffects();
     }
+
     private void HandleCameraEffects()
     {
-        // ถ้าไม่มี Component Camera ก็ไม่ต้องทำอะไร
         if (cameraComponent == null) return;
-
-        float targetFOV; // FOV เป้าหมาย
-
-        // 1. ตรวจสอบสถานะ: ถ้ากำลัง Dash
-        if (isDashing)
-        {
-            targetFOV = dashFOV; // ให้ FOV เป้าหมายเป็น dashFOV
-        }
-        else
-        {
-            targetFOV = normalFOV; // ถ้าไม่ได้ Dash ให้ FOV เป้าหมายกลับเป็นปกติ
-        }
-
-        // 2. ค่อยๆ เปลี่ยนค่า FOV ปัจจุบัน ไปหาค่าเป้าหมาย (เพื่อให้มันนุ่มนวล)
+        float targetFOV = isDashing ? dashFOV : normalFOV;
         cameraComponent.fieldOfView = Mathf.Lerp(cameraComponent.fieldOfView, targetFOV, Time.deltaTime * fovChangeSpeed);
     }
-    // แยกการรับ Input ออกมา
+
     void MyInput()
     {
         xInput = Input.GetAxis("Horizontal");
         zInput = Input.GetAxis("Vertical");
         moveInputDirection = transform.right * xInput + transform.forward * zInput;
         moveInputDirection.Normalize();
-
         wantsToCrouch = Input.GetKey(KeyCode.LeftControl);
-
         bool canSprint = !isCrouching && zInput > 0.1f && isGrounded;
         isSprinting = Input.GetKey(KeyCode.LeftShift) && canSprint;
-
-        // --- เช็ค Input Dash ---
         if (Input.GetKeyDown(KeyCode.Q) && dashCooldownTimer <= 0 && !isDashing && !isCrouching)
         {
             StartCoroutine(Dash());
@@ -184,64 +164,46 @@ public class SimplePlayerMovement : MonoBehaviour
 
     private void CheckForWall()
     {
-        // ยิง Raycast ไปทางขวา และซ้าย เพื่อหากำแพง
         wallRight = Physics.Raycast(transform.position, transform.right, out rightWallHit, wallCheckDistance, whatIsWall);
         wallLeft = Physics.Raycast(transform.position, -transform.right, out leftWallHit, wallCheckDistance, whatIsWall);
     }
 
-    // ฟังก์ชันเช็คสถานะ Wall Run
     private void HandleWallRunState()
     {
-        // เงื่อนไข: 1. ลอยอยู่, 2. มีกำแพง, 3. กด Shift, 4. ไม่ได้สไลด์/ย่อ
         bool canWallRun = !isGrounded && (wallLeft || wallRight) && Input.GetKey(KeyCode.LeftShift) && !isCrouching;
-
-        if (canWallRun && !isWallRunning) // ถ้าเริ่มไต่
+        if (canWallRun && !isWallRunning)
         {
             isWallRunning = true;
-            velocity.y = 0f; // ล้างความเร็วตก (เพื่อให้เกาะกำแพง)
+            velocity.y = 0f;
             Debug.Log("Start Wall Run!");
         }
-        else if (!canWallRun && isWallRunning) // ถ้าหยุดไต่ (เช่น ปล่อย Shift, ไม่มีกำแพง)
+        else if (!canWallRun && isWallRunning)
         {
             isWallRunning = false;
         }
-
-        // จัดการ Timer
         if (isWallRunning)
         {
             wallRunTimer -= Time.deltaTime;
-            if (wallRunTimer <= 0) // ถ้าเวลาหมด
-            {
-                isWallRunning = false; // บังคับหยุด
-            }
+            if (wallRunTimer <= 0) isWallRunning = false;
         }
-        else if (isGrounded) // ถ้าแตะพื้น
+        else if (isGrounded)
         {
-            wallRunTimer = maxWallRunTime; // รีเซ็ตเวลา (เพื่อให้ไต่ใหม่ได้)
+            wallRunTimer = maxWallRunTime;
         }
     }
 
-
     void HandleMovement()
     {
-        if (isDashing) return; // Dash มาก่อน
-
+        if (isDashing) return;
         isGrounded = controller.isGrounded;
-
-        if (isGrounded && velocity.y < 0) velocity.y = -2f; // รีเซ็ตแรงโน้มถ่วงเมื่อแตะพื้น
-
-        // --- Logic การเปลี่ยนสถานะ Slide/Crouch ---
+        if (isGrounded && velocity.y < 0) velocity.y = -2f;
         if (wantsToCrouch && isSprinting && !isSliding && !isCrouching) StartSlide(moveInputDirection);
         else if (!wantsToCrouch && isSliding) StopSlide();
-
         if (wantsToCrouch && !isSliding) isCrouching = true;
         else if (!wantsToCrouch && !isSliding) isCrouching = false;
 
-
-        // --- คำนวณความเร็วแนวนอน (State Machine) ---
         Vector3 targetHorizontalVelocity;
-
-        if (isWallRunning) // 1. ไต่กำแพง
+        if (isWallRunning)
         {
             Vector3 wallNormal = wallRight ? rightWallHit.normal : leftWallHit.normal;
             Vector3 wallForward = Vector3.Cross(wallNormal, Vector3.up);
@@ -249,38 +211,22 @@ public class SimplePlayerMovement : MonoBehaviour
             targetHorizontalVelocity = wallForward * wallRunSpeed;
             velocity.y = -1f;
         }
-        else if (isSliding) // 2. สไลด์
+        else if (isSliding)
         {
             currentSlideSpeed -= slideFriction * Time.deltaTime;
             if (currentSlideSpeed <= crouchSpeed) { StopSlide(); targetHorizontalVelocity = slideDirection * crouchSpeed; }
             else { targetHorizontalVelocity = slideDirection * currentSlideSpeed; }
         }
-        else // 3. เคลื่อนที่ปกติ
+        else
         {
-            // 1. เช็คว่า "อยาก" วิ่งไหม (กด Shift + W + ไม่ย่อ)
             bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && zInput > 0.1f && !isCrouching;
-
-            // 2. กำหนดความเร็ว
             float currentSpeed;
-            if (isCrouching)
-            {
-                currentSpeed = crouchSpeed;
-            }
-            else if (wantsToSprint)
-            { // ถ้า "อยาก" วิ่ง
-                currentSpeed = sprintSpeed; // ใช้ sprintSpeed (ไม่ว่าจะลอยอยู่หรือไม่ก็ตาม)
-            }
-            else
-            {
-                currentSpeed = moveSpeed;
-            }
-
-            // 3. ใช้ความเร็วที่ถูกต้อง
+            if (isCrouching) currentSpeed = crouchSpeed;
+            else if (wantsToSprint) currentSpeed = sprintSpeed;
+            else currentSpeed = moveSpeed;
             targetHorizontalVelocity = moveInputDirection * currentSpeed;
         }
 
-
-        // --- Slope Check ---
         if (!isWallRunning)
         {
             RaycastHit slopeHit;
@@ -299,8 +245,6 @@ public class SimplePlayerMovement : MonoBehaviour
             }
         }
 
-
-        // --- การกระโดด ---
         if (Input.GetButtonDown("Jump"))
         {
             if (isWallRunning) { WallJump(); isWallRunning = false; wallRunTimer = 0f; }
@@ -312,7 +256,6 @@ public class SimplePlayerMovement : MonoBehaviour
             else if (wallLeft || wallRight) { WallJump(); }
         }
 
-        // --- ใช้แรงโน้มถ่วง ---
         if (!isWallRunning)
         {
             if (!isGrounded || velocity.y > -slopeForce + 0.1f)
@@ -320,8 +263,6 @@ public class SimplePlayerMovement : MonoBehaviour
                 velocity.y += gravity * Time.deltaTime;
             }
         }
-
-        // --- รวมความเร็วสุดท้าย และ Move ---
         Vector3 finalVelocity = targetHorizontalVelocity;
         finalVelocity.y = velocity.y;
         controller.Move(finalVelocity * Time.deltaTime);
@@ -332,37 +273,23 @@ public class SimplePlayerMovement : MonoBehaviour
         Debug.Log("Wall Jump!");
         Vector3 wallNormal = wallRight ? rightWallHit.normal : leftWallHit.normal;
         Vector3 forceToApply = transform.up * wallJumpUpForce + wallNormal * wallJumpSideForce;
-
-        // กำหนด Velocity ใหม่เลย (X, Y, Z)
         velocity = forceToApply;
     }
 
     void HandleMouseLook()
     {
         if (playerCamera == null) return;
-
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
-
         xRotation -= mouseY;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
-
-        // --- ⬇️ เพิ่ม Camera Tilt ⬇️ ---
-        // 1. คำนวณเป้าหมายการเอียง
         float targetTilt = 0f;
         if (isWallRunning)
         {
             targetTilt = wallLeft ? -wallRunCameraTilt : wallRunCameraTilt;
         }
-
-        // 2. ค่อยๆ เอียงกล้องไปหาเป้าหมาย (ใช้ LerpAngle สำหรับมุม)
         float currentTilt = Mathf.LerpAngle(playerCamera.localRotation.eulerAngles.z, targetTilt, Time.deltaTime * cameraTiltSpeed);
-
-        // 3. ตั้งค่ามุมกล้อง (รวมมุมก้มเงย และมุมเอียง)
         playerCamera.localRotation = Quaternion.Euler(xRotation, 0f, currentTilt);
-        // --- ⬆️ จบส่วน Camera Tilt ⬆️ ---
-
-        // หมุนตัวละครซ้าย/ขวา
         transform.Rotate(Vector3.up * mouseX);
     }
 
@@ -370,31 +297,24 @@ public class SimplePlayerMovement : MonoBehaviour
     {
         float targetHeight = isCrouching ? crouchHeight : standingHeight;
         float currentHeight = controller.height;
-
-        // เช็คเพดานก่อนยืน (ใช้ SphereCast)
         if (!isCrouching && currentHeight < standingHeight - 0.1f)
         {
             Vector3 rayOrigin = transform.position + Vector3.up * (currentHeight / 2 + 0.05f);
-            if (Physics.SphereCast(rayOrigin, controller.radius, Vector3.up, out RaycastHit headHit, standingHeight - currentHeight + 0.1f, ~0, QueryTriggerInteraction.Ignore)) // ~0 = ทุก Layer, Ignore Trigger
+            if (Physics.SphereCast(rayOrigin, controller.radius, Vector3.up, out RaycastHit headHit, standingHeight - currentHeight + 0.1f, ~0, QueryTriggerInteraction.Ignore))
             {
                 targetHeight = crouchHeight;
                 isCrouching = true;
                 if (isSliding) StopSlide();
             }
         }
-
-        // ค่อยๆ เปลี่ยนความสูงและ Center
         controller.height = Mathf.Lerp(currentHeight, targetHeight, Time.deltaTime * cameraHeightChangeSpeed * 2);
         controller.center = new Vector3(0, controller.height / 2, 0);
-
-        // --- ปรับตำแหน่งกล้อง ---
         if (playerCamera != null)
         {
             Vector3 targetCameraLocalPos = isCrouching ? crouchCameraPos : standingCameraPos;
             playerCamera.localPosition = Vector3.Lerp(playerCamera.localPosition, targetCameraLocalPos, Time.deltaTime * cameraHeightChangeSpeed);
         }
     }
-
 
     private void StartSlide(Vector3 direction)
     {
@@ -408,15 +328,15 @@ public class SimplePlayerMovement : MonoBehaviour
     private void StopSlide()
     {
         isSliding = false;
-        // isCrouching จะถูกตัดสินใน HandleMovement
     }
 
+    // --- ⬇️ นี่คือฟังก์ชัน Dash() ที่ถูกต้อง (มี yield return) ⬇️ ---
     private IEnumerator Dash()
     {
         isDashing = true;
         dashCooldownTimer = dashCooldown;
         float startTime = Time.time;
-        Vector3 originalVerticalVelocity = new Vector3(0, velocity.y, 0); // เก็บแค่ Y
+        Vector3 originalVerticalVelocity = new Vector3(0, velocity.y, 0);
 
         float xDash = Input.GetAxisRaw("Horizontal");
         float zDash = Input.GetAxisRaw("Vertical");
@@ -425,44 +345,29 @@ public class SimplePlayerMovement : MonoBehaviour
 
         while (Time.time < startTime + dashDuration)
         {
-            // พุ่งไปตามทิศทาง + รักษาความเร็วตกเดิมไว้เล็กน้อย (กันทะลุพื้น)
             controller.Move((dashDirection * dashSpeed + originalVerticalVelocity * 0.2f) * Time.deltaTime);
-            yield return null;
+            yield return null; // ❗️ บรรทัดนี้คือหัวใจสำคัญ
         }
 
         isDashing = false;
     }
 
-    // -----------------------------------------------------------------
-    // --- ⬇️ (!!!) เมธอด Respawn ที่เพิ่มเข้ามา (!!!) ⬇️ ---
-    // -----------------------------------------------------------------
-
-    /// <summary>
-    /// ย้าย CharacterController ไปยังจุดที่กำหนด (สำหรับ Respawn)
-    /// </summary>
-    /// <param name="spawnPoint">ตำแหน่งที่จะให้ไปเกิด</param>
-    /// <param name="controller">ตัว CharacterController ที่จะย้าย (ต้องเป็นตัวเดียวกับที่ใช้ใน Start)</param>
+    // --- ⬇️ นี่คือฟังก์ชัน Respawn() ที่ถูกต้อง (มีอันเดียว) ⬇️ ---
     public void Respawn(Vector3 spawnPoint, CharacterController charController)
     {
         Debug.Log("PlayerMove is respawning...");
 
-        // 1. ปิด Controller ก่อนย้ายตำแหน่ง (ป้องกันบั๊ก)
         if (charController != null)
         {
             charController.enabled = false;
         }
-
-        // 2. ย้ายตำแหน่ง Player
         transform.position = spawnPoint;
-
-        // 3. เปิด Controller กลับมา
         if (charController != null)
         {
             charController.enabled = true;
         }
 
-        // 4. รีเซ็ตสถานะทั้งหมด
-        velocity = Vector3.zero; // ล้างแรงโน้มถ่วง/แรงกระโดด
+        velocity = Vector3.zero;
         isDashing = false;
         isSliding = false;
         isCrouching = false;
@@ -470,7 +375,6 @@ public class SimplePlayerMovement : MonoBehaviour
         wallRunTimer = maxWallRunTime;
         dashCooldownTimer = 0f;
 
-        // 5. (ทางเลือก) รีเซ็ตมุมกล้อง
         if (playerCamera != null)
         {
             xRotation = 0f;
@@ -482,6 +386,4 @@ public class SimplePlayerMovement : MonoBehaviour
             cameraComponent.fieldOfView = normalFOV;
         }
     }
-
-
 }
