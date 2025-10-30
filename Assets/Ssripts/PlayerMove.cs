@@ -9,6 +9,9 @@ public class SimplePlayerMovement : MonoBehaviour
     public float sprintSpeed = 10f;
     public float jumpHeight = 2f;
     public float gravity = -19.62f;
+    // --- ⬇️ (เพิ่ม) ตัวแปรสำหรับโมเมนตัม ⬇️ ---
+    public float airMultiplier = 0.4f; // ความสามารถในการเลี้ยวกลางอากาศ (0.1 = ยาก, 1 = ง่าย)
+    public float groundAcceleration = 10f; // ความเร็วในการเร่ง/หยุดบนพื้น
 
     [Header("Dashing")]
     public float dashSpeed = 30f;
@@ -69,7 +72,7 @@ public class SimplePlayerMovement : MonoBehaviour
 
     // --- Private Variables ---
     private CharacterController controller;
-    private Vector3 velocity; // เก็บความเร็วแนวดิ่ง (ตก/กระโดด/แรงกด)
+    private Vector3 velocity; // ❗️ (สำคัญ) ตอนนี้ velocity จะเก็บทั้ง X, Y, Z (โมเมนตัม)
     private bool isGrounded;
 
     // --- Input Variables ---
@@ -77,7 +80,7 @@ public class SimplePlayerMovement : MonoBehaviour
     private float zInput;
     private Vector3 moveInputDirection;
     private bool wantsToCrouch;
-    private bool isSprinting;
+    private bool isSprinting; // (ตัวแปร isSprinting ถูกย้ายไปเช็คใน MyInput แล้ว)
 
 
     void Start()
@@ -122,7 +125,7 @@ public class SimplePlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // --- ❗️ (แก้ไข) เช็ค Pause ทีเดียวบนสุด ---
+        // --- (เช็ค Pause ทีเดียวบนสุด) ---
         if (PauseMenu.GameIsPaused)
         {
             return; // ถ้าเกมหยุด ให้หยุดทำงาน Update นี้ทันที
@@ -134,7 +137,7 @@ public class SimplePlayerMovement : MonoBehaviour
         CheckForWall();
         HandleWallRunState();
 
-        HandleMovement();
+        HandleMovement(); // ❗️ (ฟังก์ชันนี้ถูกแก้ไขใหม่ทั้งหมด)
         HandleMouseLook();
         HandleHeightChange();
         HandleCameraEffects();
@@ -154,8 +157,11 @@ public class SimplePlayerMovement : MonoBehaviour
         moveInputDirection = transform.right * xInput + transform.forward * zInput;
         moveInputDirection.Normalize();
         wantsToCrouch = Input.GetKey(KeyCode.LeftControl);
+
+        // (แก้ไข) ย้าย isSprinting มาเช็คที่นี่
         bool canSprint = !isCrouching && zInput > 0.1f && isGrounded;
         isSprinting = Input.GetKey(KeyCode.LeftShift) && canSprint;
+
         if (Input.GetKeyDown(KeyCode.Q) && dashCooldownTimer <= 0 && !isDashing && !isCrouching)
         {
             StartCoroutine(Dash());
@@ -174,7 +180,8 @@ public class SimplePlayerMovement : MonoBehaviour
         if (canWallRun && !isWallRunning)
         {
             isWallRunning = true;
-            velocity.y = 0f;
+            velocity.y = 0f; // ล้างความเร็วตก
+            wallRunTimer = maxWallRunTime; // รีเซ็ตเวลาทุกครั้งที่เริ่มไต่
             Debug.Log("Start Wall Run!");
         }
         else if (!canWallRun && isWallRunning)
@@ -186,76 +193,101 @@ public class SimplePlayerMovement : MonoBehaviour
             wallRunTimer -= Time.deltaTime;
             if (wallRunTimer <= 0) isWallRunning = false;
         }
-        else if (isGrounded)
-        {
-            wallRunTimer = maxWallRunTime;
-        }
+        // (ลบ) else if (isGrounded) ... (ย้ายไปไว้ใน HandleMovement ตอนเช็ค Jump)
     }
 
+    // --- ⬇️ (!!!) ฟังก์ชันนี้ถูก "เขียนใหม่" ทั้งหมด (!!!) ⬇️ ---
     void HandleMovement()
     {
-        if (isDashing) return;
+        if (isDashing) return; // Dash มาก่อน
+
         isGrounded = controller.isGrounded;
-        if (isGrounded && velocity.y < 0) velocity.y = -2f;
+
+        // --- ⬇️ (แก้ไข) ย้าย rayOrigin มาประกาศไว้บนสุด ⬇️ ---
+        Vector3 rayOrigin = transform.position + Vector3.up * (controller.radius * 0.5f);
+        // --- ⬆️ จบส่วนแก้ไข ⬆️ ---
+
+        // --- 1. State Checks (Slide/Crouch) ---
         if (wantsToCrouch && isSprinting && !isSliding && !isCrouching) StartSlide(moveInputDirection);
         else if (!wantsToCrouch && isSliding) StopSlide();
         if (wantsToCrouch && !isSliding) isCrouching = true;
         else if (!wantsToCrouch && !isSliding) isCrouching = false;
 
-        Vector3 targetHorizontalVelocity;
+
+        // --- 2. คำนวณความเร็วแนวนอน (Horizontal Velocity) ---
+
         if (isWallRunning)
         {
+            // ... (โค้ด Wall Run เดิม) ...
             Vector3 wallNormal = wallRight ? rightWallHit.normal : leftWallHit.normal;
             Vector3 wallForward = Vector3.Cross(wallNormal, Vector3.up);
             if (Vector3.Dot(transform.forward, wallForward) < 0) wallForward = -wallForward;
-            targetHorizontalVelocity = wallForward * wallRunSpeed;
-            velocity.y = -1f;
+            velocity.x = wallForward.x * wallRunSpeed;
+            velocity.z = wallForward.z * wallRunSpeed;
         }
         else if (isSliding)
         {
+            // ... (โค้ด Slide เดิม) ...
             currentSlideSpeed -= slideFriction * Time.deltaTime;
-            if (currentSlideSpeed <= crouchSpeed) { StopSlide(); targetHorizontalVelocity = slideDirection * crouchSpeed; }
-            else { targetHorizontalVelocity = slideDirection * currentSlideSpeed; }
+            if (currentSlideSpeed <= crouchSpeed) { StopSlide(); }
+            float speed = isSliding ? currentSlideSpeed : crouchSpeed;
+            velocity.x = Mathf.Lerp(velocity.x, slideDirection.x * speed, Time.deltaTime * groundAcceleration);
+            velocity.z = Mathf.Lerp(velocity.z, slideDirection.z * speed, Time.deltaTime * groundAcceleration);
         }
-        else
+        else if (isGrounded) // Normal Ground Movement
         {
+            // ... (โค้ด Ground Movement เดิม) ...
             bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && zInput > 0.1f && !isCrouching;
-            float currentSpeed;
-            if (isCrouching) currentSpeed = crouchSpeed;
-            else if (wantsToSprint) currentSpeed = sprintSpeed;
-            else currentSpeed = moveSpeed;
-            targetHorizontalVelocity = moveInputDirection * currentSpeed;
+            float currentSpeed = isCrouching ? crouchSpeed : (wantsToSprint ? sprintSpeed : moveSpeed);
+            Vector3 targetVelocity = moveInputDirection * currentSpeed;
+            velocity.x = Mathf.Lerp(velocity.x, targetVelocity.x, Time.deltaTime * groundAcceleration);
+            velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, Time.deltaTime * groundAcceleration);
+        }
+        else // Normal Air Movement (Apex Style)
+        {
+            // ... (โค้ด Air Movement เดิม) ...
+            bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && zInput > 0.1f && !isCrouching;
+            float airSpeed = wantsToSprint ? sprintSpeed : moveSpeed;
+            velocity += moveInputDirection * airSpeed * airMultiplier * Time.deltaTime;
         }
 
-        if (!isWallRunning)
+
+        // --- 3. คำนวณความเร็วแนวดิ่ง (Vertical Velocity) ---
+
+        // (ย้าย) แรงกดพื้น (Slope Force)
+        if (!isWallRunning && isGrounded)
         {
             RaycastHit slopeHit;
-            Vector3 rayOrigin = transform.position + Vector3.up * (controller.radius * 0.5f);
+            // (ลบ) Vector3 rayOrigin = ... (ย้ายไปไว้ข้างบนแล้ว)
             if (Physics.Raycast(rayOrigin, Vector3.down, out slopeHit, controller.height * 0.5f + 0.3f))
             {
                 float angle = Vector3.Angle(Vector3.up, slopeHit.normal);
                 if (angle < controller.slopeLimit && angle != 0)
                 {
-                    targetHorizontalVelocity = Vector3.ProjectOnPlane(targetHorizontalVelocity, slopeHit.normal);
-                    if (controller.velocity.y < 0.1f && Vector3.Dot(velocity, slopeHit.normal) < 0)
+                    // (แก้บั๊กจมดิน)
+                    if (controller.velocity.y < 0.1f && Vector3.Dot(velocity, slopeHit.normal) < 0 && !isCrouching)
                     {
-                        velocity.y = -slopeForce;
+                        velocity.y = -slopeForce; // ใช้แรงกด
                     }
                 }
             }
         }
 
+        // การกระโดด
         if (Input.GetButtonDown("Jump"))
         {
+            // ... (โค้ด Jump เดิม) ...
             if (isWallRunning) { WallJump(); isWallRunning = false; wallRunTimer = 0f; }
             else if (isGrounded)
             {
-                if (isSliding) { velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity); StopSlide(); }
-                else if (!isCrouching) { velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity); }
+                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                if (isSliding) StopSlide();
+                wallRunTimer = maxWallRunTime;
             }
             else if (wallLeft || wallRight) { WallJump(); }
         }
 
+        // แรงโน้มถ่วง
         if (!isWallRunning)
         {
             if (!isGrounded || velocity.y > -slopeForce + 0.1f)
@@ -263,17 +295,32 @@ public class SimplePlayerMovement : MonoBehaviour
                 velocity.y += gravity * Time.deltaTime;
             }
         }
-        Vector3 finalVelocity = targetHorizontalVelocity;
-        finalVelocity.y = velocity.y;
-        controller.Move(finalVelocity * Time.deltaTime);
+
+        // กดพื้น (ถ้าติดพื้น และไม่ได้กระโดด/ติดทางลาด)
+        if (isGrounded && velocity.y < 0 && !Input.GetButtonDown("Jump") && !isSliding && !isWallRunning)
+        {
+            RaycastHit groundHit;
+
+            // --- ⬇️ (แก้ไข) บรรทัดนี้จะหายแดงแล้ว ⬇️ ---
+            if (!Physics.Raycast(rayOrigin, Vector3.down, out groundHit, controller.height * 0.5f + 0.3f) || Vector3.Angle(Vector3.up, groundHit.normal) == 0)
+                velocity.y = -2f; // กดพื้นปกติ
+        }
+
+        // --- 4. Final Move ---
+        controller.Move(velocity * Time.deltaTime);
     }
+
 
     private void WallJump()
     {
         Debug.Log("Wall Jump!");
         Vector3 wallNormal = wallRight ? rightWallHit.normal : leftWallHit.normal;
         Vector3 forceToApply = transform.up * wallJumpUpForce + wallNormal * wallJumpSideForce;
-        velocity = forceToApply;
+
+        // (แก้ไข) กำหนดแค่ X, Z จากแรงถีบ, Y มาจากแรงกระโดด
+        velocity.x = forceToApply.x;
+        velocity.y = forceToApply.y;
+        velocity.z = forceToApply.z;
     }
 
     void HandleMouseLook()
@@ -321,16 +368,24 @@ public class SimplePlayerMovement : MonoBehaviour
         if (!isGrounded) return;
         isSliding = true;
         isCrouching = true;
-        currentSlideSpeed = slideSpeed;
+        currentSlideSpeed = slideSpeed; // ตั้งค่าความเร็วสไลด์
+
+        // (แก้ไข) เก็บโมเมนตัมปัจจุบันถ้าเร็วกว่า
+        float currentHorizontalSpeed = new Vector3(velocity.x, 0, velocity.z).magnitude;
+        if (currentHorizontalSpeed > slideSpeed)
+        {
+            currentSlideSpeed = currentHorizontalSpeed;
+        }
+
         slideDirection = (direction.magnitude > 0.1f) ? direction : transform.forward;
     }
 
     private void StopSlide()
     {
         isSliding = false;
+        // isCrouching จะถูกตัดสินใน MyInput/HandleMovement
     }
 
-    // --- ⬇️ นี่คือฟังก์ชัน Dash() ที่ถูกต้อง (มี yield return) ⬇️ ---
     private IEnumerator Dash()
     {
         isDashing = true;
@@ -343,16 +398,26 @@ public class SimplePlayerMovement : MonoBehaviour
         Vector3 dashInputDirection = transform.right * xDash + transform.forward * zDash;
         Vector3 dashDirection = dashInputDirection.magnitude > 0.1f ? dashInputDirection.normalized : transform.forward;
 
+        // (แก้ไข) เก็บโมเมนตัมเดิมไว้ตอนเริ่ม Dash
+        Vector3 dashStartVelocity = new Vector3(velocity.x, 0, velocity.z);
+
         while (Time.time < startTime + dashDuration)
         {
-            controller.Move((dashDirection * dashSpeed + originalVerticalVelocity * 0.2f) * Time.deltaTime);
-            yield return null; // ❗️ บรรทัดนี้คือหัวใจสำคัญ
+            // (แก้ไข) ทำให้ Dash มีผลกับโมเมนตัมเดิม
+            Vector3 dashVelocity = dashDirection * dashSpeed;
+            // ผสมความเร็วเดิมกับความเร็ว Dash
+            Vector3 combinedVelocity = Vector3.Lerp(dashStartVelocity, dashVelocity, (Time.time - startTime) / dashDuration);
+
+            controller.Move((combinedVelocity + originalVerticalVelocity * 0.2f) * Time.deltaTime);
+            velocity = new Vector3(combinedVelocity.x, velocity.y, combinedVelocity.z); // อัปเดตโมเมนตัม
+            yield return null;
         }
 
         isDashing = false;
+        // (ลบ) ไม่ต้องกำหนด velocity ใหม่ ให้มันไหลต่อไปเอง
     }
 
-    // --- ⬇️ นี่คือฟังก์ชัน Respawn() ที่ถูกต้อง (มีอันเดียว) ⬇️ ---
+    // --- ฟังก์ชัน Respawn (มีอันเดียว) ---
     public void Respawn(Vector3 spawnPoint, CharacterController charController)
     {
         Debug.Log("PlayerMove is respawning...");
