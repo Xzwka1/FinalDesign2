@@ -22,6 +22,11 @@ public class PlayerShoot : MonoBehaviour
             // เรียกฟังก์ชันยิง
             Shoot();
         }
+        if (Input.GetButton("Fire1") && Time.time >= nextFireTime && !PauseMenu.GameIsPaused)
+        {
+            nextFireTime = Time.time + fireRate;
+            Shoot();
+        }
     }
 
     void Shoot()
