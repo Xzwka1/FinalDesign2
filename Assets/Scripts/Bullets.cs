@@ -32,26 +32,43 @@ public class Bullet : MonoBehaviour
     /// </summary>
     void OnCollisionEnter(Collision collision)
     {
-        // (!!!) 1. ตรวจสอบว่าเคยชนไปแล้วหรือยัง
-        if (hasHit) return; // ถ้าเคยชนแล้ว (เป็น true) ให้ออกจากฟังก์ชันนี้ทันที
-
-        // (!!!) 2. ตั้งค่าว่า "ชนแล้ว" (กันการชนซ้ำในเฟรมถัดไป)
+        // 1. ป้องกันการชนซ้ำ
+        if (hasHit) return;
         hasHit = true;
 
-        // --- 3. ตรวจสอบว่าชน Enemy หรือไม่ ---
-        EnemyAI enemy = collision.gameObject.GetComponent<EnemyAI>();
+        // --- (ส่วนที่แก้ไข) ---
 
-        if (enemy != null)
+        // 2. พยายามดึงสคริปต์ "EnemyAI" (ตัวธรรมดา/ประชิด)
+        EnemyAI enemy_Melee = collision.gameObject.GetComponent<EnemyAI>();
+
+        // 3. พยายามดึงสคริปต์ "EnemyAI_Ranged" (ตัวยิงไกล)
+        EnemyAI_Ranged enemy_Ranged = collision.gameObject.GetComponent<EnemyAI_Ranged>();
+
+        // 4. ตรวจสอบว่าเจอตัวไหน
+        if (enemy_Melee != null)
         {
-            Debug.Log("Bullet hit an Enemy!");
-            enemy.TakeDamage(damageToDeal);
+            // 4a. ถ้าเจอตัวธรรมดา
+            Debug.Log("Bullet hit Melee Enemy!");
+
+            // (สำคัญ: ต้องมั่นใจว่าสคริปต์ EnemyAI.cs ของคุณ
+            //         ก็มีฟังก์ชัน public void TakeDamage(int damage) เหมือนกัน)
+            enemy_Melee.TakeDamage(damageToDeal);
+        }
+        else if (enemy_Ranged != null)
+        {
+            // 4b. ถ้าเจอตัวยิงไกล
+            Debug.Log("Bullet hit Ranged Enemy!");
+            enemy_Ranged.TakeDamage(damageToDeal);
         }
         else
         {
+            // 4c. ถ้าไม่เจอทั้งคู่ (ชนกำแพง, พื้น ฯลฯ)
             Debug.Log("Bullet hit a wall or something else.");
         }
 
-        // --- 4. ไม่ว่าจะชนอะไรก็ตาม ให้ทำลายกระสุนทิ้ง ---
+        // --- (จบส่วนแก้ไข) ---
+
+        // 5. ไม่ว่าจะชนอะไรก็ตาม ให้ทำลายกระสุนทิ้ง
         Destroy(gameObject);
     }
 }
