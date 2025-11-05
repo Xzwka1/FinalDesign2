@@ -759,13 +759,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAI_Ranged
   player: {fileID: 912021046}
-  sightRange: 15
-  attackRange: 10
+  sightRange: 20
+  attackRange: 20
   patrolRadius: 10
   bulletPrefab: {fileID: 5178265090294565772, guid: 6e3002f6756f4374c8dce9665e6d51a9, type: 3}
   firePoint: {fileID: 781145706}
   attackDamage: 10
-  timeBetweenAttacks: 2
+  timeBetweenAttacks: 1
   maxHealth: 80
 --- !u!195 &54688385
 NavMeshAgent:
@@ -10933,7 +10933,7 @@ Transform:
   m_GameObject: {fileID: 781145705}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.68, y: 0, z: -0.51}
+  m_LocalPosition: {x: 0.83, y: 0, z: 0.21}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

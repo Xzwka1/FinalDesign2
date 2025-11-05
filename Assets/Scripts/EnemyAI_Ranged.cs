@@ -145,27 +145,24 @@ public class EnemyAI_Ranged : MonoBehaviour // ❗️ เปลี่ยนช�
     {
         agent.isStopped = true; // หยุดเดินเพื่อยิง
 
-        // --- ❗️ (นี่คือ 2 บรรทัดที่ขาดไป) ❗️ ---
-        // เราต้องคำนวณทิศทางและสร้างตัวแปร 'lookRotation' ก่อน
+        // หันหน้าหา Player แบบสมูท (เฉพาะแกน Y ไม่ก้มเงย)
         Vector3 direction = (player.position - transform.position).normalized;
         Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
-
-        // (บรรทัดที่มีปัญหาของคุณ) ตอนนี้มันรู้จัก 'lookRotation' แล้ว
         transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
-        // --- (จบส่วนแก้ไข) ---
-
 
         if (attackTimer <= 0f)
         {
             if (bulletPrefab != null && firePoint != null)
             {
-                // 1. สร้างกระสุน และเก็บไว้อ้างอิง
+                // บังคับจุดยิงหันหา Player ทันที (เล็งที่กลางตัว Player สูงจากพื้น 1 เมตร)
+                // เพื่อให้กระสุนพุ่งไปหาเป้าหมายแม่นยำ ไม่เบี้ยวตามการหมุนของตัวศัตรู
+                firePoint.LookAt(player.position + Vector3.up);
+
+                // 1. สร้างกระสุน
                 GameObject bulletObject = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
 
-                // 2. ดึงสคริปต์ EnemyBullet
+                // 2. ดึงสคริปต์ EnemyBullet และส่งค่าดาเมจ
                 EnemyBullet bulletScript = bulletObject.GetComponent<EnemyBullet>();
-
-                // 3. เรียกใช้ฟังก์ชันใหม่เพื่อส่งค่าดาเมจ
                 if (bulletScript != null)
                 {
                     bulletScript.InitializeBullet(attackDamage);
