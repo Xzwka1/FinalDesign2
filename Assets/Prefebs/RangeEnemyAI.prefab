@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 2189197438050924960}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.68, y: 0, z: -0.51}
+  m_LocalPosition: {x: 0.83, y: 0, z: 0.21}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -60,8 +60,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3578971868293263095}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.39719862, z: 0, w: 0.9177327}
-  m_LocalPosition: {x: -292.8311, y: 14.133334, z: 141.91353}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -273.11, y: 14.48, z: 144.61642}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -182,11 +182,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAI_Ranged
   player: {fileID: 0}
-  sightRange: 15
-  attackRange: 10
+  sightRange: 20
+  attackRange: 20
   patrolRadius: 10
   bulletPrefab: {fileID: 5178265090294565772, guid: 6e3002f6756f4374c8dce9665e6d51a9, type: 3}
   firePoint: {fileID: 3147976170010519819}
   attackDamage: 10
-  timeBetweenAttacks: 2
+  timeBetweenAttacks: 1
   maxHealth: 80

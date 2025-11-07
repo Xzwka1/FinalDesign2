@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1797522108428924586}
   - component: {fileID: 4201051094719260199}
   - component: {fileID: 6943709836530683273}
-  m_Layer: 8
+  m_Layer: 6
   m_Name: PauseMenuPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -89,7 +89,7 @@ GameObject:
   - component: {fileID: 8520748626010870828}
   - component: {fileID: 268276901809407440}
   - component: {fileID: 3585093235230526125}
-  m_Layer: 8
+  m_Layer: 6
   m_Name: Exit to Main Menu
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -221,7 +221,7 @@ GameObject:
   - component: {fileID: 4209635386523162249}
   - component: {fileID: 6243882719329056257}
   - component: {fileID: 1678323191854744243}
-  m_Layer: 8
+  m_Layer: 6
   m_Name: WarningText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -360,7 +360,8 @@ GameObject:
   - component: {fileID: 4359347463987537764}
   - component: {fileID: 2142603613591354611}
   - component: {fileID: 3652433664745360676}
-  m_Layer: 8
+  - component: {fileID: 6996192425010774512}
+  m_Layer: 6
   m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -521,6 +522,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   maxHealth: 100
   healthSlider: {fileID: 0}
+--- !u!136 &6996192425010774512
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3202110455937733567}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5000001
+  m_Height: 2
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &3251162158472214222
 GameObject:
   m_ObjectHideFlags: 0
@@ -533,7 +557,7 @@ GameObject:
   - component: {fileID: 5854952182764040413}
   - component: {fileID: 3655154481377912565}
   - component: {fileID: 6601388242433691287}
-  m_Layer: 8
+  m_Layer: 6
   m_Name: Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -636,7 +660,7 @@ GameObject:
   - component: {fileID: 1265033830983295632}
   - component: {fileID: 6749281686819631269}
   - component: {fileID: 3778481659403874803}
-  m_Layer: 8
+  m_Layer: 6
   m_Name: Winscreen
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -712,7 +736,7 @@ GameObject:
   - component: {fileID: 4108354336884668285}
   - component: {fileID: 3661384985904208682}
   - component: {fileID: 5302003110062944300}
-  m_Layer: 8
+  m_Layer: 6
   m_Name: Resume
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -848,7 +872,7 @@ GameObject:
   - component: {fileID: 3360999793005236367}
   - component: {fileID: 8464518567823736237}
   - component: {fileID: 6208121057154856470}
-  m_Layer: 8
+  m_Layer: 6
   m_Name: "\u0E22\u0E34\u0E19\u0E14\u0E35\u0E14\u0E49\u0E27\u0E22\u0E19\u0E32\u0E22\u0E1C\u0E48\u0E32\u0E19\u0E41\u0E25\u0E49\u0E27!!"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -985,7 +1009,7 @@ GameObject:
   - component: {fileID: 7243259613727751947}
   - component: {fileID: 1566031556867551005}
   - component: {fileID: 1422568132526644214}
-  m_Layer: 8
+  m_Layer: 6
   m_Name: ResumeButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1117,7 +1141,7 @@ GameObject:
   - component: {fileID: 1695013234992747249}
   - component: {fileID: 6062519164351697066}
   - component: {fileID: 810483919582208728}
-  m_Layer: 8
+  m_Layer: 6
   m_Name: Exit to Main Menu
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1251,7 +1275,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 915436215618154859}
-  m_Layer: 8
+  m_Layer: 6
   m_Name: FirePoints
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1285,7 +1309,7 @@ GameObject:
   - component: {fileID: 6011009386487194030}
   - component: {fileID: 3726560846400527697}
   - component: {fileID: 8313563506823884002}
-  m_Layer: 8
+  m_Layer: 6
   m_Name: Main Camera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
