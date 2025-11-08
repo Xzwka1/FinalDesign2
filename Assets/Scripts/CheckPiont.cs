@@ -14,14 +14,7 @@ public class Checkpoint : MonoBehaviour
                 // (Optional) ปิด Checkpoint นี้ไปเลยหลังใช้ครั้งแรก
                 // gameObject.SetActive(false); 
             }
-            if (GameManager.instance != null)
-            {
-                GameManager.instance.ResetAllEnemies();
-            }
-            else
-            {
-                Debug.LogWarning("GameManager instance not found! Enemies won't reset.");
-            }
+
         }
     }
 }
