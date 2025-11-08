@@ -10,40 +10,39 @@ public class PlayerHealth : MonoBehaviour
     [Header("UI")]
     public Slider healthSlider;
 
-    // การอ้างอิง Component อื่นๆ
-    private CharacterController controller;
-    // เก็บตำแหน่ง Checkpoint ล่าสุด
-    private Vector3 currentRespawnPosition;
+    // --- ⬇️ (แก้ไข) เปลี่ยนชื่อคลาสที่อ้างอิง ⬇️ ---
+    private SimplePlayerMovement playerMove;
+    private CharacterController controller; // ❗️ (เพิ่ม) เราต้องใช้ Controller ด้วย
+    private Vector3 respawnPoint; // ❗️ (เพิ่ม) เก็บจุดเกิด
 
     void Start()
     {
         currentHealth = maxHealth;
         UpdateHealthUI();
 
-        controller = GetComponent<CharacterController>();
-        if (controller == null) Debug.LogError("CharacterController component not found on Player!");
+        // --- ⬇️ (แก้ไข) GetComponent ให้ครบ ⬇️ ---
+        playerMove = GetComponent<SimplePlayerMovement>();
+        controller = GetComponent<CharacterController>(); // ❗️ (เพิ่ม)
+        respawnPoint = transform.position; // ❗️ (เพิ่ม) บันทึกจุดเกิด
 
-        // กำหนดจุดเกิดเริ่มต้นเป็นตำแหน่งที่ยืนอยู่ตอนเริ่มเกม
-        currentRespawnPosition = transform.position;
+        if (playerMove == null) Debug.LogError("SimplePlayerMovement script not found!");
+        if (controller == null) Debug.LogError("CharacterController component not found!");
     }
 
-    // ฟังก์ชันรับดาเมจ
     public void TakeDamage(int damage)
     {
-        if (currentHealth <= 0) return; // ถ้าตายแล้ว ไม่ต้องรับดาเมจเพิ่ม
+        if (currentHealth <= 0) return; // ถ้าตายแล้ว ไม่ต้องรับดาเมจซ้ำ
 
         currentHealth -= damage;
+        if (currentHealth < 0) currentHealth = 0;
+
+        // --- ⬇️ (เพิ่ม) Log ที่คุณต้องการ ⬇️ ---
         Debug.Log($"Player took {damage} damage. Current health: {currentHealth}");
 
         UpdateHealthUI();
-
-        if (currentHealth <= 0)
-        {
-            Die();
-        }
+        if (currentHealth <= 0) Die();
     }
 
-    // อัปเดตหลอดเลือด
     void UpdateHealthUI()
     {
         if (healthSlider != null)
@@ -53,52 +52,17 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    // ฟังก์ชันตาย (พลังหมด)
     private void Die()
     {
-        Debug.Log("Player has died due to lack of health!");
-        Respawn(); // เรียกฟังก์ชันเกิดใหม่
-    }
+        Debug.Log("Player has died!");
 
-    // --- ⬇️ ระบบเกิดใหม่ (Respawn System) ⬇️ ---
-
-    // ฟังก์ชันสำหรับ Checkpoint เรียกใช้เพื่ออัปเดตจุดเกิด
-    public void SetRespawnPoint(Vector3 newPosition)
-    {
-        currentRespawnPosition = newPosition;
-        Debug.Log("Checkpoint updated to: " + newPosition);
-    }
-
-    // ฟังก์ชันกลางสำหรับการเกิดใหม่ (เรียกได้ทั้งจาก Die() และ DeathZone)
-    public void Respawn()
-    {
-        Debug.Log("Respawning Player...");
-
-        // 1. ย้ายตำแหน่ง Player (ต้องปิด CharacterController ก่อนชั่วคราว)
-        if (controller != null)
+        if (playerMove != null && controller != null)
         {
-            controller.enabled = false;
-            transform.position = currentRespawnPosition; // ย้ายไปที่จุด Checkpoint ล่าสุด
-            controller.enabled = true;
-        }
-        else
-        {
-            // กรณีไม่ได้ใช้ CharacterController (เผื่อไว้)
-            transform.position = currentRespawnPosition;
+            // --- ⬇️ (แก้ไข) เรียก Respawn ให้ถูกรูปแบบ ⬇️ ---
+            playerMove.Respawn(respawnPoint, controller);
         }
 
-        // 2. รีเซ็ตพลังชีวิต
         currentHealth = maxHealth;
         UpdateHealthUI();
-
-        // 3. รีเซ็ตศัตรูทั้งหมดในฉาก
-        if (GameManager.instance != null)
-        {
-            GameManager.instance.ResetAllEnemies();
-        }
-        else
-        {
-            Debug.LogWarning("GameManager instance not found! Enemies won't reset.");
-        }
     }
 }
