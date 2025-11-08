@@ -25928,6 +25928,25 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1902652883}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1914658324 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6264796807620455725, guid: d7930a070a6f3b241a78e57ebba050c3, type: 3}
+  m_PrefabInstance: {fileID: 6307836803680335396}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1914658326
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1914658324}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e167554ae9684f498d6043e4043ab88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameManager
+  meleeEnemies: []
+  rangedEnemies: []
 --- !u!1 &1917017054
 GameObject:
   m_ObjectHideFlags: 0
@@ -30296,7 +30315,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6264796807620455725, guid: d7930a070a6f3b241a78e57ebba050c3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1914658326}
   m_SourcePrefab: {fileID: 100100000, guid: d7930a070a6f3b241a78e57ebba050c3, type: 3}
 --- !u!1001 &6423480771571745214
 PrefabInstance:
