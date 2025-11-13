@@ -30,6 +30,7 @@ public class EnemyAI : MonoBehaviour
     public int maxHealth = 50;
     private int currentHealth;
 
+    private bool isDead = false;
     private enum AIState { Patrolling, Chasing, Attacking }
 
     void Start()
@@ -118,14 +119,23 @@ public class EnemyAI : MonoBehaviour
 
     private void Die()
     {
-        Debug.Log("Enemy ตายแล้ว");
-        // ❗️ 2. เปลี่ยนเป็นซ่อน
-        gameObject.SetActive(false);
+        if (isDead) return; // ❗️ ป้องกันการตายซ้ำ
+        isDead = true;      // ❗️ ตั้งค่าว่าตายแล้ว
+
+        Debug.Log(gameObject.name + " ตายแล้ว");
+        gameObject.SetActive(false); // ซ่อนตัว
+
+        // ❗️ รายงาน GameManager
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.ReportEnemyKilled();
+        }
     }
 
     // ❗️ 3. เพิ่มฟังก์ชันรีเซ็ต
     public void ResetEnemy()
     {
+        isDead = false;
         currentHealth = maxHealth;
         transform.position = startPosition;
         transform.rotation = startRotation;
