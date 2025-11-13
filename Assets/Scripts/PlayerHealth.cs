@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.UI; // ต้องมีสำหรับ UI components
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -8,61 +8,86 @@ public class PlayerHealth : MonoBehaviour
     private int currentHealth;
 
     [Header("UI")]
-    public Slider healthSlider;
+    // public Slider healthSlider; // ❗️ ลบอันนี้ทิ้ง หรือ คอมเมนต์ไว้
+    public Image hpFillImage; // ❗️ เพิ่ม: อ้างอิงถึง Image ที่เป็นหลอดเลือดสีแดง (HP_Fill)
 
-    // --- ⬇️ (แก้ไข) เปลี่ยนชื่อคลาสที่อ้างอิง ⬇️ ---
-    private SimplePlayerMovement playerMove;
-    private CharacterController controller; // ❗️ (เพิ่ม) เราต้องใช้ Controller ด้วย
-    private Vector3 respawnPoint; // ❗️ (เพิ่ม) เก็บจุดเกิด
+    // --- ส่วนประกอบที่จำเป็น ---
+    private CharacterController controller;
+
+    // --- ระบบ Respawn ---
+    private Vector3 currentRespawnPosition;
 
     void Start()
     {
         currentHealth = maxHealth;
-        UpdateHealthUI();
+        UpdateHealthUI(); // ❗️ อัปเดต UI ตอนเริ่มเกม
 
-        // --- ⬇️ (แก้ไข) GetComponent ให้ครบ ⬇️ ---
-        playerMove = GetComponent<SimplePlayerMovement>();
-        controller = GetComponent<CharacterController>(); // ❗️ (เพิ่ม)
-        respawnPoint = transform.position; // ❗️ (เพิ่ม) บันทึกจุดเกิด
+        controller = GetComponent<CharacterController>();
+        if (controller == null) Debug.LogError("PlayerHealth: ไม่พบ CharacterController!");
 
-        if (playerMove == null) Debug.LogError("SimplePlayerMovement script not found!");
-        if (controller == null) Debug.LogError("CharacterController component not found!");
+        currentRespawnPosition = transform.position;
     }
 
     public void TakeDamage(int damage)
     {
-        if (currentHealth <= 0) return; // ถ้าตายแล้ว ไม่ต้องรับดาเมจซ้ำ
+        if (currentHealth <= 0) return;
 
         currentHealth -= damage;
-        if (currentHealth < 0) currentHealth = 0;
+        if (currentHealth < 0) currentHealth = 0; // กันเลือดติดลบ
 
-        // --- ⬇️ (เพิ่ม) Log ที่คุณต้องการ ⬇️ ---
         Debug.Log($"Player took {damage} damage. Current health: {currentHealth}");
 
-        UpdateHealthUI();
-        if (currentHealth <= 0) Die();
+        UpdateHealthUI(); // ❗️ อัปเดต UI ทุกครั้งที่รับดาเมจ
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
     }
 
+    // ฟังก์ชันอัปเดต UI
     void UpdateHealthUI()
     {
-        if (healthSlider != null)
+        if (hpFillImage != null)
         {
-            healthSlider.maxValue = maxHealth;
-            healthSlider.value = currentHealth;
+            // คำนวณค่า Fill Amount (0.0 ถึง 1.0)
+            hpFillImage.fillAmount = (float)currentHealth / maxHealth;
         }
     }
 
     private void Die()
     {
         Debug.Log("Player has died!");
+        Respawn();
+    }
 
-        if (playerMove != null && controller != null)
+    public void Respawn()
+    {
+        Debug.Log("Player Respawning...");
+
+        if (controller != null)
         {
-            // --- ⬇️ (แก้ไข) เรียก Respawn ให้ถูกรูปแบบ ⬇️ ---
-            playerMove.Respawn(respawnPoint, controller);
+            controller.enabled = false;
+            transform.position = currentRespawnPosition;
+            controller.enabled = true;
+        }
+        else
+        {
+            transform.position = currentRespawnPosition;
         }
 
         currentHealth = maxHealth;
-        UpdateHealthUI();
+        UpdateHealthUI(); // ❗️ อัปเดต UI ให้เลือดเต็มหลังเกิดใหม่
+
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.ResetAllEnemies();
+        }
+    }
+
+    public void SetRespawnPoint(Vector3 newPosition)
+    {
+        currentRespawnPosition = newPosition;
+        Debug.Log("Checkpoint Set!");
     }
 }

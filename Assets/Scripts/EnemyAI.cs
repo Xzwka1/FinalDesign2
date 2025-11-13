@@ -1,59 +1,51 @@
 ﻿using UnityEngine;
-using UnityEngine.AI; // ❗️ (สำคัญมาก) ต้องมีบรรทัดนี้สำหรับ NavMesh
+using UnityEngine.AI;
 
-[RequireComponent(typeof(NavMeshAgent))] // บังคับให้มี NavMeshAgent
+[RequireComponent(typeof(NavMeshAgent))]
 public class EnemyAI : MonoBehaviour
 {
     [Header("References")]
-    public Transform player; // ลาก Player มาใส่
-    private PlayerHealth playerHealth; // สคริปต์พลังชีวิตของ Player
+    public Transform player;
+    private PlayerHealth playerHealth;
     private NavMeshAgent agent;
 
     [Header("AI State")]
-    public float sightRange = 15f;  // ระยะมองเห็น
-    public float attackRange = 2f;  // ระยะโจมตี
+    public float sightRange = 15f;
+    public float attackRange = 2f;
     private AIState currentState;
     private bool playerInSightRange;
     private bool playerInAttackRange;
 
     [Header("Patrolling")]
-    public float patrolRadius = 10f; // รัศมีการเดินสุ่ม
+    public float patrolRadius = 10f;
     private Vector3 startPosition;
+    private Quaternion startRotation; // ❗️ เพิ่ม: เก็บการหมุน
 
     [Header("Attacking")]
     public int attackDamage = 10;
-    public float timeBetweenAttacks = 2f; // หน่วงเวลาโจมตี (เช่น 2 วินาที)
+    public float timeBetweenAttacks = 2f;
     private float attackTimer = 0f;
 
     [Header("Health (Enemy)")]
     public int maxHealth = 50;
     private int currentHealth;
 
-    // Enum สำหรับจัดการสถานะ
-    private enum AIState
-    {
-        Patrolling,
-        Chasing,
-        Attacking
-    }
+    private enum AIState { Patrolling, Chasing, Attacking }
 
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
         currentHealth = maxHealth;
-        startPosition = transform.position; // บันทึกจุดเกิด
 
-        // --- ค้นหา Player อัตโนมัติ ---
-        // (สำคัญ: Player ของคุณต้องติด Tag "Player" ใน Inspector)
+        // ❗️ 1. จดจำค่าเริ่มต้น
+        startPosition = transform.position;
+        startRotation = transform.rotation;
+
         GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
         if (playerObject != null)
         {
             player = playerObject.transform;
             playerHealth = playerObject.GetComponent<PlayerHealth>();
-        }
-        else
-        {
-            Debug.LogError("EnemyAI: ไม่พบ Player! กรุณาตรวจสอบว่า Player มี Tag 'Player'");
         }
 
         currentState = AIState.Patrolling;
@@ -62,142 +54,92 @@ public class EnemyAI : MonoBehaviour
 
     void Update()
     {
-        // ถ้าไม่มี Player หรือ Player ตายแล้ว ก็ไม่ต้องทำอะไร
         if (player == null || playerHealth == null) return;
 
-        // --- 1. ตรวจสอบระยะห่าง ---
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
         playerInSightRange = distanceToPlayer <= sightRange;
         playerInAttackRange = distanceToPlayer <= attackRange;
 
-        // --- 2. อัปเดตสถานะ AI ---
-        if (playerInAttackRange)
-        {
-            currentState = AIState.Attacking;
-        }
-        else if (playerInSightRange)
-        {
-            currentState = AIState.Chasing;
-        }
-        else
-        {
-            currentState = AIState.Patrolling;
-        }
+        if (playerInAttackRange) currentState = AIState.Attacking;
+        else if (playerInSightRange) currentState = AIState.Chasing;
+        else currentState = AIState.Patrolling;
 
-        // --- 3. ทำงานตามสถานะ ---
         switch (currentState)
         {
-            case AIState.Patrolling:
-                Patrol();
-                break;
-            case AIState.Chasing:
-                Chase();
-                break;
-            case AIState.Attacking:
-                Attack();
-                break;
+            case AIState.Patrolling: Patrol(); break;
+            case AIState.Chasing: Chase(); break;
+            case AIState.Attacking: Attack(); break;
         }
 
-        // --- 4. อัปเดตตัวจับเวลาโจมตี ---
-        if (attackTimer > 0)
-        {
-            attackTimer -= Time.deltaTime;
-        }
+        if (attackTimer > 0) attackTimer -= Time.deltaTime;
     }
 
-    /// <summary>
-    /// สถานะ: เดินลาดตระเวน
-    /// </summary>
     void Patrol()
     {
         agent.isStopped = false;
-        // ถ้าเดินถึงจุดหมายแล้ว หรือยังไม่มีจุดหมาย
-        if (!agent.pathPending && agent.remainingDistance < 0.5f)
-        {
-            SetNewPatrolDestination();
-        }
+        if (!agent.pathPending && agent.remainingDistance < 0.5f) SetNewPatrolDestination();
     }
 
-    /// <summary>
-    /// หาจุดเดินสุ่มใหม่
-    /// </summary>
     void SetNewPatrolDestination()
     {
         Vector3 randomDirection = Random.insideUnitSphere * patrolRadius;
-        randomDirection += startPosition; // บวกกับจุดเริ่มต้น
-
+        randomDirection += startPosition;
         NavMeshHit hit;
-        // หาตำแหน่งที่ใกล้เคียงที่สุดบน NavMesh
         if (NavMesh.SamplePosition(randomDirection, out hit, patrolRadius, 1))
         {
             agent.SetDestination(hit.position);
         }
     }
 
-    /// <summary>
-    /// สถานะ: ไล่ล่า Player
-    /// </summary>
     void Chase()
     {
         agent.isStopped = false;
         agent.SetDestination(player.position);
     }
 
-    /// <summary>
-    /// สถานะ: โจมตี Player
-    /// </summary>
     void Attack()
     {
-        agent.isStopped = true; // หยุดเดินเพื่อโจมตี
-
-        // หันหน้าหา Player
+        agent.isStopped = true;
         transform.LookAt(player.position);
 
         if (attackTimer <= 0f)
         {
-            // --- ทำการโจมตี ---
-            Debug.Log("Enemy โจมตี Player!");
-            if (playerHealth != null)
-            {
-                // เรียกใช้ฟังก์ชันใน PlayerHealth.cs
-                playerHealth.TakeDamage(attackDamage);
-            }
-
-            // รีเซ็ตตัวจับเวลา
+            if (playerHealth != null) playerHealth.TakeDamage(attackDamage);
             attackTimer = timeBetweenAttacks;
         }
     }
 
-    // ---------------------------------------------
-    // --- (ส่วนนี้สำหรับให้ Player โจมตี Enemy) ---
-    // ---------------------------------------------
-
-    /// <summary>
-    /// ฟังก์ชันรับดาเมจ (สำหรับให้ Player เรียกใช้)
-    /// </summary>
     public void TakeDamage(int damage)
     {
         currentHealth -= damage;
-        Debug.Log("Enemy Health: " + currentHealth);
-
-        // (ทางเลือก) เมื่อถูกโจมตี ให้ไล่ล่า Player ทันที
         currentState = AIState.Chasing;
-
-        if (currentHealth <= 0)
-        {
-            Die();
-        }
+        if (currentHealth <= 0) Die();
     }
 
     private void Die()
     {
         Debug.Log("Enemy ตายแล้ว");
-        // (สามารถเพิ่ม Animation หรือ Particle Effect ตรงนี้ได้)
-
-        Destroy(gameObject); // ทำลายตัวเอง
+        // ❗️ 2. เปลี่ยนเป็นซ่อน
+        gameObject.SetActive(false);
     }
 
-    // (ทางเลือก) วาดวงกลมแสดงระยะให้เห็นใน Editor
+    // ❗️ 3. เพิ่มฟังก์ชันรีเซ็ต
+    public void ResetEnemy()
+    {
+        currentHealth = maxHealth;
+        transform.position = startPosition;
+        transform.rotation = startRotation;
+        gameObject.SetActive(true);
+
+        currentState = AIState.Patrolling;
+        if (agent != null && agent.isOnNavMesh)
+        {
+            agent.Warp(startPosition); // ย้ายตำแหน่งบน NavMesh
+            agent.ResetPath(); // ล้างเส้นทางเก่า
+            SetNewPatrolDestination();
+        }
+    }
+
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;

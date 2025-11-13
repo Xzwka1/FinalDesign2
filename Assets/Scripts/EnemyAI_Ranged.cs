@@ -4,7 +4,6 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyAI_Ranged : MonoBehaviour
 {
-    // ... (ตัวแปรเดิมคงเดิม เพิ่ม startRotation) ...
     [Header("References")]
     public Transform player;
     private PlayerHealth playerHealth;
@@ -20,7 +19,7 @@ public class EnemyAI_Ranged : MonoBehaviour
     [Header("Patrolling")]
     public float patrolRadius = 10f;
     private Vector3 startPosition;
-    private Quaternion startRotation; // เพิ่ม: เก็บค่าการหมุนเริ่มต้น
+    private Quaternion startRotation; // ❗️ เพิ่ม: เก็บการหมุน
 
     [Header("Attacking")]
     public GameObject bulletPrefab;
@@ -33,18 +32,13 @@ public class EnemyAI_Ranged : MonoBehaviour
     public int maxHealth = 50;
     private int currentHealth;
 
-    private enum AIState
-    {
-        Patrolling,
-        Chasing,
-        Attacking
-    }
+    private enum AIState { Patrolling, Chasing, Attacking }
 
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
 
-        // >>> 1. จดจำค่าเริ่มต้น <<<
+        // ❗️ 1. จดจำค่าเริ่มต้น
         startPosition = transform.position;
         startRotation = transform.rotation;
         currentHealth = maxHealth;
@@ -60,8 +54,6 @@ public class EnemyAI_Ranged : MonoBehaviour
         SetNewPatrolDestination();
     }
 
-    // ... (ฟังก์ชัน Update และอื่นๆ เหมือนเดิม) ...
-    // (ขอละไว้ในฐานที่เข้าใจ เพื่อความกระชับนะครับ โค้ดส่วน Update, Patrol, Chase, Attack เหมือนที่คุณส่งมาเป๊ะๆ)
     void Update()
     {
         if (player == null || playerHealth == null) return;
@@ -83,9 +75,12 @@ public class EnemyAI_Ranged : MonoBehaviour
         if (attackTimer > 0) attackTimer -= Time.deltaTime;
     }
 
-    void Patrol() { /* ...เหมือนเดิม... */ agent.isStopped = false; if (!agent.pathPending && agent.remainingDistance < 0.5f) SetNewPatrolDestination(); }
-    void SetNewPatrolDestination() { /* ...เหมือนเดิม... */ Vector3 randomDirection = Random.insideUnitSphere * patrolRadius; randomDirection += startPosition; NavMeshHit hit; if (NavMesh.SamplePosition(randomDirection, out hit, patrolRadius, 1)) agent.SetDestination(hit.position); }
-    void Chase() { /* ...เหมือนเดิม... */ agent.isStopped = false; agent.SetDestination(player.position); }
+    void Patrol() { agent.isStopped = false; if (!agent.pathPending && agent.remainingDistance < 0.5f) SetNewPatrolDestination(); }
+
+    void SetNewPatrolDestination() { Vector3 randomDirection = Random.insideUnitSphere * patrolRadius; randomDirection += startPosition; NavMeshHit hit; if (NavMesh.SamplePosition(randomDirection, out hit, patrolRadius, 1)) agent.SetDestination(hit.position); }
+
+    void Chase() { agent.isStopped = false; agent.SetDestination(player.position); }
+
     void Attack()
     {
         agent.isStopped = true;
@@ -115,11 +110,11 @@ public class EnemyAI_Ranged : MonoBehaviour
 
     private void Die()
     {
-        // >>> 2. เปลี่ยนจาก Destroy เป็น Disable <<<
+        // ❗️ 2. เปลี่ยนเป็นซ่อน
         gameObject.SetActive(false);
     }
 
-    // >>> 3. เพิ่มฟังก์ชันรีเซ็ต <<<
+    // ❗️ 3. ฟังก์ชันรีเซ็ต
     public void ResetEnemy()
     {
         currentHealth = maxHealth;
