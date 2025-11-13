@@ -1,57 +1,63 @@
-using UnityEngine;
+๏ปฟusing UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(Collider))]
 public class Bullet : MonoBehaviour
 {
     private Rigidbody rb;
-    private int damageToDeal; // ดาเมจที่จะส่งให้ Enemy
+    private int damageToDeal;
+    private bool hasHit = false;
 
-    private bool hasHit = false; // ตัวแปรป้องกันการชนซ้ำ
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
-
-        // (ทางเลือก) ทำลายตัวเองทิ้ง ถ้าลอยไปนานเกิน 5 วินาที (กันรก Scene)
         Destroy(gameObject, 5f);
     }
 
-    /// <summary>
-    /// ฟังก์ชันนี้จะถูกเรียกโดย PlayerShoot.cs
-    /// </summary>
     public void Initialize(Vector3 force, int damage)
     {
         damageToDeal = damage;
-
-        // ใช้ ForceMode.Impulse เพื่อให้แรงกระแทกทันที
         rb.AddForce(force, ForceMode.Impulse);
     }
 
-    /// <summary>
-    /// ทำงานเมื่อกระสุนชนกับอะไรบางอย่าง
-    /// </summary>
     void OnCollisionEnter(Collision collision)
     {
-        // (!!!) 1. ตรวจสอบว่าเคยชนไปแล้วหรือยัง
-        if (hasHit) return; // ถ้าเคยชนแล้ว (เป็น true) ให้ออกจากฟังก์ชันนี้ทันที
-
-        // (!!!) 2. ตั้งค่าว่า "ชนแล้ว" (กันการชนซ้ำในเฟรมถัดไป)
+        if (hasHit) return;
         hasHit = true;
 
-        // --- 3. ตรวจสอบว่าชน Enemy หรือไม่ ---
-        EnemyAI enemy = collision.gameObject.GetComponent<EnemyAI>();
+        // --- โฌ๏ธ (เนเธเนเนเธเธชเนเธงเธเธเธตเน) โฌ๏ธ ---
 
-        if (enemy != null)
+        // 1. (เธเนเธญเธเธเธฑเธ) เธ–เนเธฒเธเธเธ•เธฑเธงเน€เธญเธ (Player) เนเธซเนเน€เธกเธดเธเนเธเธเนเธญเธ
+        if (collision.gameObject.CompareTag("Player"))
         {
-            Debug.Log("Bullet hit an Enemy!");
-            enemy.TakeDamage(damageToDeal);
-        }
-        else
-        {
-            Debug.Log("Bullet hit a wall or something else.");
+            hasHit = false; // เธฃเธตเน€เธเนเธ•เธเนเธฒ hasHit เน€เธเธทเนเธญเธเธฃเธฐเธชเธธเธเนเธเธฅเธ
+            return; // เนเธกเนเธ•เนเธญเธเธ—เธณเธญเธฐเนเธฃ
         }
 
-        // --- 4. ไม่ว่าจะชนอะไรก็ตาม ให้ทำลายกระสุนทิ้ง ---
-        Destroy(gameObject);
+        // 2. เน€เธเนเธเธงเนเธฒเน€เธเนเธ "เธจเธฑเธ•เธฃเธนเธ•เธตเนเธเธฅเน" เธซเธฃเธทเธญเนเธกเน
+        EnemyAI meleeEnemy = collision.gameObject.GetComponent<EnemyAI>();
+        if (meleeEnemy != null)
+        {
+            Debug.Log("Bullet hit a Melee Enemy!");
+            meleeEnemy.TakeDamage(damageToDeal);
+            Destroy(gameObject); // เธ—เธณเธฅเธฒเธขเธเธฃเธฐเธชเธธเธ
+            return; // เธเธเธเธฒเธฃเธ—เธณเธเธฒเธ
+        }
+
+        // 3. (เน€เธเธดเนเธก) เธ–เนเธฒเนเธกเนเนเธเนเธ•เธตเนเธเธฅเน, เธฅเธญเธเน€เธเนเธเธงเนเธฒเน€เธเนเธ "เธจเธฑเธ•เธฃเธนเธขเธดเธเนเธเธฅ" เธซเธฃเธทเธญเนเธกเน
+        EnemyAI_Ranged rangedEnemy = collision.gameObject.GetComponent<EnemyAI_Ranged>();
+        if (rangedEnemy != null)
+        {
+            Debug.Log("Bullet hit a Ranged Enemy!");
+            rangedEnemy.TakeDamage(damageToDeal);
+            Destroy(gameObject); // เธ—เธณเธฅเธฒเธขเธเธฃเธฐเธชเธธเธ
+            return; // เธเธเธเธฒเธฃเธ—เธณเธเธฒเธ
+        }
+
+        // --- โฌ๏ธ (เธชเธดเนเธเธชเธธเธ”เธชเนเธงเธเนเธเนเนเธ) โฌ๏ธ ---
+
+        // 4. เธ–เนเธฒเนเธกเนเนเธเนเธ—เธฑเนเธ Player, เธ•เธตเนเธเธฅเน, เธขเธดเธเนเธเธฅ (เน€เธเนเธ เธเธเธเธณเนเธเธ)
+        Debug.Log("Bullet hit a wall or something else.");
+        Destroy(gameObject); // เธ—เธณเธฅเธฒเธขเธเธฃเธฐเธชเธธเธ
     }
 }
