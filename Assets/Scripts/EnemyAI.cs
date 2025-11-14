@@ -30,6 +30,12 @@ public class EnemyAI : MonoBehaviour
     public int maxHealth = 50;
     private int currentHealth;
 
+    // --- ⬇️ (1. เพิ่มตัวแปรเสียง) ⬇️ ---
+    [Header("Audio")]
+    [Tooltip("ลากไฟล์เสียงร้องตอนตาย (MP3/WAV) มาใส่")]
+    public AudioClip deathSound;
+    // --- ⬆️ (สิ้นสุดส่วนที่เพิ่ม) ⬆️ ---
+
     private bool isDead = false;
     private enum AIState { Patrolling, Chasing, Attacking }
 
@@ -37,8 +43,6 @@ public class EnemyAI : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         currentHealth = maxHealth;
-
-        // ❗️ 1. จดจำค่าเริ่มต้น
         startPosition = transform.position;
         startRotation = transform.rotation;
 
@@ -53,8 +57,11 @@ public class EnemyAI : MonoBehaviour
         SetNewPatrolDestination();
     }
 
+    // ... (Update, Patrol, SetNewPatrolDestination, Chase, Attack คงเดิม) ...
+    #region Standard AI Behaviour
     void Update()
     {
+        if (isDead) return; // ❗️ (เพิ่ม) ถ้าตายแล้ว หยุดทำงาน Update
         if (player == null || playerHealth == null) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
@@ -109,9 +116,11 @@ public class EnemyAI : MonoBehaviour
             attackTimer = timeBetweenAttacks;
         }
     }
+    #endregion
 
     public void TakeDamage(int damage)
     {
+        if (isDead) return; // ถ้าตายแล้ว ไม่ต้องรับดาเมจซ้ำ
         currentHealth -= damage;
         currentState = AIState.Chasing;
         if (currentHealth <= 0) Die();
@@ -119,23 +128,30 @@ public class EnemyAI : MonoBehaviour
 
     private void Die()
     {
-        if (isDead) return; // ❗️ ป้องกันการตายซ้ำ
-        isDead = true;      // ❗️ ตั้งค่าว่าตายแล้ว
+        if (isDead) return; // ป้องกันการตายซ้ำ
+        isDead = true;      // ตั้งค่าว่าตายแล้ว
+
+        // --- ⬇️ (2. เพิ่มโค้ดเล่นเสียง) ⬇️ ---
+        // เล่นเสียง ณ ตำแหน่งปัจจุบัน (วิธีนี้เสียงจะเล่นต่อจนจบ แม้ Object จะถูกปิด)
+        if (deathSound != null)
+        {
+            AudioSource.PlayClipAtPoint(deathSound, transform.position);
+        }
+        // --- ⬆️ (สิ้นสุดส่วนที่เพิ่ม) ⬆️ ---
 
         Debug.Log(gameObject.name + " ตายแล้ว");
         gameObject.SetActive(false); // ซ่อนตัว
 
-        // ❗️ รายงาน GameManager
+        // รายงาน GameManager
         if (GameManager.instance != null)
         {
             GameManager.instance.ReportEnemyKilled();
         }
     }
 
-    // ❗️ 3. เพิ่มฟังก์ชันรีเซ็ต
     public void ResetEnemy()
     {
-        isDead = false;
+        isDead = false; // ❗️ รีเซ็ตสถานะการตาย
         currentHealth = maxHealth;
         transform.position = startPosition;
         transform.rotation = startRotation;
@@ -144,8 +160,8 @@ public class EnemyAI : MonoBehaviour
         currentState = AIState.Patrolling;
         if (agent != null && agent.isOnNavMesh)
         {
-            agent.Warp(startPosition); // ย้ายตำแหน่งบน NavMesh
-            agent.ResetPath(); // ล้างเส้นทางเก่า
+            agent.Warp(startPosition);
+            agent.ResetPath();
             SetNewPatrolDestination();
         }
     }

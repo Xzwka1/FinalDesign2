@@ -10,18 +10,33 @@ public class PlayerShoot : MonoBehaviour
     [SerializeField] private int bulletDamage = 25;
     private float nextFireTime = 0f; // ตัวนับเวลา
 
+    // --- ⬇️ (อัปเดตส่วนนี้) ⬇️ ---
+    [Header("Audio")]
+    [Tooltip("ลากไฟล์เสียงยิงเวท (MP3/WAV) มาใส่")]
+    public AudioClip magicShootSound;
+
+    [Tooltip("ความดังของเสียงยิง (0.0 = เบา, 1.0 = ดังสุด)")]
+    [Range(0.0f, 1.0f)] // ❗️ (เพิ่ม) ทำให้เป็นสไลเดอร์ 0-1
+    public float shootVolume = 1.0f; // ❗️ (เพิ่ม) ตัวแปรปรับความดัง (ค่าเริ่มต้น 1 คือดังสุด)
+
+    private AudioSource audioSource;
+    // --- ⬆️ (สิ้นสุดส่วนอัปเดต) ⬆️ ---
+
+
+    void Start()
+    {
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            Debug.LogWarning("PlayerShoot: ไม่พบ AudioSource, กำลังเพิ่ม Component...");
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.loop = false;
+        }
+    }
+
     void Update()
     {
-        // 1. ตรวจสอบว่าถึงเวลายิงรึยัง (Time.time > nextFireTime)
-        // 2. ตรวจสอบว่ากดคลิกซ้ายหรือไม่ (Input.GetButton("Fire1"))
-        if (Input.GetButton("Fire1") && Time.time >= nextFireTime)
-        {
-            // รีเซ็ตตัวนับเวลา
-            nextFireTime = Time.time + fireRate;
-
-            // เรียกฟังก์ชันยิง
-            Shoot();
-        }
         if (Input.GetButton("Fire1") && Time.time >= nextFireTime && !PauseMenu.GameIsPaused)
         {
             nextFireTime = Time.time + fireRate;
@@ -31,23 +46,23 @@ public class PlayerShoot : MonoBehaviour
 
     void Shoot()
     {
-        // 1. สร้างกระสุน (Instantiate) จาก Prefab ณ ตำแหน่งและมุมของ firePoint
+        // 1. สร้างกระสุน
         GameObject bullet = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
 
-        // 2. หาส่วนประกอบ Rigidbody จากกระสุนที่เพิ่งสร้าง
-        Rigidbody rb = bullet.GetComponent<Rigidbody>();
-
-        // 3. (ทางเลือก A) ถ้ากระสุนของคุณไม่มีสคริปต์ Bullet.cs
-        //    ให้ใช้โค้ดนี้เพื่อยิง (แต่ผมแนะนำวิธี B มากกว่า)
-        // rb.AddForce(firePoint.forward * bulletForce, ForceMode.Impulse);
-
-        // 3. (ทางเลือก B - แนะนำ)
-        //    ให้สคริปต์ Bullet.cs จัดการตัวเอง
-        //    เราแค่ส่งค่าความแรงและดาเมจไปให้มัน (ถ้าต้องการ)
+        // 2. หาสคริปต์ Bullet.cs
         Bullet bulletScript = bullet.GetComponent<Bullet>();
         if (bulletScript != null)
         {
+            // 3. ส่งค่าความแรงและดาเมจ
             bulletScript.Initialize(firePoint.forward * bulletForce, bulletDamage);
         }
+
+        // --- ⬇️ (แก้ไขส่วนนี้) ⬇️ ---
+        // สั่งเล่นเสียง โดยส่ง "ความดัง (Volume)" ที่เราตั้งค่าไว้เข้าไปด้วย
+        if (magicShootSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(magicShootSound, shootVolume);
+        }
+        // --- ⬆️ (สิ้นสุดส่วนแก้ไข) ⬆️ ---
     }
 }
