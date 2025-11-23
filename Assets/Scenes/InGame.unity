@@ -5913,10 +5913,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 128601371693739526, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 268276901809407440, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
       propertyPath: m_Type
       value: 0
@@ -5941,14 +5937,6 @@ PrefabInstance:
       propertyPath: m_Sprite
       value: 
       objectReference: {fileID: -906771482, guid: f9604d77a23b378438504a4ccb397bfe, type: 3}
-    - target: {fileID: 2142603613591354611, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
-      propertyPath: walkPitch
-      value: 1.95
-      objectReference: {fileID: 0}
-    - target: {fileID: 2142603613591354611, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
-      propertyPath: sprintPitch
-      value: 2.15
-      objectReference: {fileID: 0}
     - target: {fileID: 2974372715685935325, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
       propertyPath: m_LocalScale.x
       value: 1.6050913
@@ -5989,26 +5977,6 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 2081502370}
-    - target: {fileID: 3652433664745360676, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
-      propertyPath: hpFillImage
-      value: 
-      objectReference: {fileID: 872579897}
-    - target: {fileID: 3655154481377912565, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
-      propertyPath: m_UiScaleMode
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3655154481377912565, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
-      propertyPath: m_MatchWidthOrHeight
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 3655154481377912565, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
-      propertyPath: m_ReferenceResolution.x
-      value: 1920
-      objectReference: {fileID: 0}
-    - target: {fileID: 3655154481377912565, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
-      propertyPath: m_ReferenceResolution.y
-      value: 1080
-      objectReference: {fileID: 0}
     - target: {fileID: 5302003110062944300, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
       propertyPath: m_text
       value: 
@@ -6053,14 +6021,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8313563506823884002, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
-      propertyPath: shootVolume
-      value: 0.45
-      objectReference: {fileID: 0}
-    - target: {fileID: 8313563506823884002, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
-      propertyPath: magicShootSound
-      value: 
-      objectReference: {fileID: 8300000, guid: 1d74880bed4586644a16a79a2d9dc8af, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -14593,17 +14553,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 862919160}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &872579897 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1394014988815246212, guid: 0d7f6c3fc994ce24fa928cefe412dd1e, type: 3}
-  m_PrefabInstance: {fileID: 442167287}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
 --- !u!1 &879456607
 GameObject:
   m_ObjectHideFlags: 0
