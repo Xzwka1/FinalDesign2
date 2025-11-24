@@ -27048,7 +27048,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5562764850170356073, guid: 4833808965f90a840916706184b1e186, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1484060383}
   m_SourcePrefab: {fileID: 100100000, guid: 4833808965f90a840916706184b1e186, type: 3}
 --- !u!1001 &1126988745
 PrefabInstance:
@@ -44181,6 +44184,23 @@ MonoBehaviour:
   m_MinRegionArea: 2
   m_NavMeshData: {fileID: 23800000, guid: 20a77085b1188b142bc32c09ba86a6f6, type: 2}
   m_BuildHeightMesh: 0
+--- !u!1 &1484060382 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5562764850170356073, guid: 4833808965f90a840916706184b1e186, type: 3}
+  m_PrefabInstance: {fileID: 1125586458}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1484060383
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1484060382}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de6abb427a6b6f741bb8553b963ef3a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeathZone
 --- !u!1001 &1489074612
 PrefabInstance:
   m_ObjectHideFlags: 0
