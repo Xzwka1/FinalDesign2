@@ -1,108 +1,81 @@
-﻿using System.Collections.Generic; // ❗️ ต้องมี เพื่อใช้ List<>
-using TMPro; // (ทางเลือก: ถ้าคุณอยากโชว์ข้อความเตือน)
-using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.SceneManagement; // ❗️ จำเป็นสำหรับการเปลี่ยนฉาก
 using System.Collections;
 
-[RequireComponent(typeof(Collider))]
 public class LevelExit : MonoBehaviour
 {
-    [Header("UI")]
-    [Tooltip("ลาก Panel (หน้าต่าง) UI ที่จะโชว์ตอนชนะมาใส่")]
-    public GameObject winScreenPanel;
+    [Header("Settings")]
+    [Tooltip("ใส่ชื่อฉาก Main Menu ของคุณให้ตรงเป๊ะๆ")]
+    public string mainMenuSceneName = "MainMenu";
 
-    [Header("Warning Message (Optional)")]
-    [Tooltip("ลาก Text (TMP) ที่จะโชว์คำเตือน 'ฆ่าศัตรูให้หมด' มาใส่")]
-    public TextMeshProUGUI warningText;
-    public float warningDisplayTime = 2f;
+    [Tooltip("จะโชว์หน้าชนะกี่วินาที ก่อนจะตัดเข้าหน้าเมนู")]
+    public float delayBeforeExit = 3f;
 
-    // --- ส่วนนับศัตรู ---
-    private List<EnemyAI> enemiesInLevel; // List สำหรับ "จำ" ศัตรูทั้งหมด
-    private bool allEnemiesDefeated = false;
+    [Header("UI References")]
+    public GameObject winScreenPanel; // ลากภาพ Win UI มาใส่
+    public GameObject warningText;    // ลากข้อความเตือนมาใส่
 
-    void Start()
-    {
-        GetComponent<Collider>().isTrigger = true;
-
-        // 1. ซ่อน UI ตอนเริ่ม
-        if (winScreenPanel != null) winScreenPanel.SetActive(false);
-        if (warningText != null) warningText.gameObject.SetActive(false);
-
-        // 2. ค้นหาและ "จำ" ศัตรูทั้งหมดในด่านตอนเริ่มเกม
-        // 2. ค้นหาและ "จำ" ศัตรูทั้งหมดในด่านตอนเริ่มเกม
-        enemiesInLevel = new List<EnemyAI>(FindObjectsByType<EnemyAI>(FindObjectsSortMode.None)); // ✅ แก้เป็นบรรทัดนี้
-        Debug.Log($"Level started with {enemiesInLevel.Count} enemies.");
-    }
+    private bool levelCompleted = false;
 
     private void OnTriggerEnter(Collider other)
     {
-        // 1. เช็คว่าเป็น Player หรือไม่
-        if (allEnemiesDefeated || !other.CompareTag("Player")) return;
+        // ถ้าจบด่านไปแล้ว หรือไม่ใช่ Player ให้ข้ามไป
+        if (levelCompleted || !other.CompareTag("Player")) return;
 
-        // 2. ตรวจสอบเงื่อนไข (ว่าศัตรูตายหมดหรือยัง)
-        CheckWinCondition();
-
-        if (allEnemiesDefeated)
+        // 1. ถาม GameManager ว่าฆ่าหมดหรือยัง?
+        if (GameManager.instance != null)
         {
-            // --- ชนะแล้ว ---
-            Debug.Log("LEVEL COMPLETE!");
-            ShowWinScreen(other.GetComponent<SimplePlayerMovement>());
+            if (GameManager.instance.AreAllEnemiesDefeated())
+            {
+                // --- ✅ เงื่อนไขครบ (ชนะ) ---
+                StartCoroutine(WinSequence(other.gameObject));
+            }
+            else
+            {
+                // --- ❌ ยังฆ่าไม่หมด ---
+                Debug.Log("GameManager บอกว่าศัตรูยังไม่หมด!");
+                if (warningText != null) StartCoroutine(ShowWarning());
+            }
         }
         else
         {
-            // --- ยังไม่ชนะ ---
-            Debug.Log("Player reached exit, but enemies remain.");
-            if (warningText != null)
-            {
-                StartCoroutine(ShowWarning());
-            }
+            Debug.LogError("ไม่พบ GameManager ในฉาก! กรุณาวาง GameManager ลงใน Hierarchy");
         }
     }
 
-    /// <summary>
-    /// วนลูปเช็ค List ศัตรูที่ "จำ" ไว้ ว่าถูก Destroy (เป็น null) หมดหรือยัง
-    /// </summary>
-    private void CheckWinCondition()
+    // ลำดับการทำงานตอนชนะ
+    IEnumerator WinSequence(GameObject player)
     {
-        int enemiesAlive = 0;
-        foreach (EnemyAI enemy in enemiesInLevel)
+        levelCompleted = true;
+        Debug.Log("Level Complete!");
+
+        // 1. โชว์หน้าต่างชนะ
+        if (winScreenPanel != null)
         {
-            // ถ้า "enemy" ยังไม่เป็น "null" 
-            // (หมายความว่า GameObject นั้นยังไม่ถูก Destroy)
-            if (enemy != null)
-            {
-                enemiesAlive++; // นับว่ายังเหลือ
-            }
+            winScreenPanel.SetActive(true);
         }
 
-        Debug.Log($"Checking win condition... Enemies remaining: {enemiesAlive}");
+        // 2. (Optional) ปิดการขยับตัวผู้เล่น เพื่อไม่ให้เดินไปเดินมาระหว่างรอ
+        // var moveScript = player.GetComponent<SimplePlayerMovement>();
+        // if (moveScript != null) moveScript.enabled = false;
 
-        // ถ้าไม่เหลือศัตรู (เป็น 0)
-        if (enemiesAlive == 0)
-        {
-            allEnemiesDefeated = true;
-        }
-    }
-
-
-    // ฟังก์ชันโชว์หน้าจอ "ชนะ"
-    private void ShowWinScreen(SimplePlayerMovement playerScript)
-    {
-        if (winScreenPanel != null) winScreenPanel.SetActive(true);
-
-        Time.timeScale = 0f; // หยุดเวลา
+        // 3. ปลดล็อคเมาส์ (เผื่อต้องใช้คลิกในหน้าเมนู)
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // ปิดสคริปต์ Player
-        if (playerScript != null) playerScript.enabled = false;
+        // 4. รอเวลาสักพัก ให้คนเล่นดูหน้าชนะ
+        yield return new WaitForSeconds(delayBeforeExit);
+
+        // 5. โหลดกลับหน้า Main Menu
+        Debug.Log("Loading Main Menu...");
+        SceneManager.LoadScene(mainMenuSceneName);
     }
 
-    // (ทางเลือก) ฟังก์ชันโชว์คำเตือน
-    private IEnumerator ShowWarning()
+    // โชว์ข้อความเตือนแล้วซ่อน
+    IEnumerator ShowWarning()
     {
-        warningText.gameObject.SetActive(true);
-        warningText.text = "You must kill all enemies first!";
-        yield return new WaitForSeconds(warningDisplayTime);
-        warningText.gameObject.SetActive(false);
+        warningText.SetActive(true);
+        yield return new WaitForSeconds(2f);
+        warningText.SetActive(false);
     }
 }
